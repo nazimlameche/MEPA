@@ -5,9 +5,6 @@ import { usePathname } from 'next/navigation';
 import { BookOpen, Wand2, MessageSquare, Sparkles, User, LayoutDashboard } from 'lucide-react';
 import { cn } from '@ai-edu/ui';
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  BookOpen, Wand2, MessageSquare, Sparkles,
-};
 
 const NAV = [
   { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },

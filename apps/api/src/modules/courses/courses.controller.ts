@@ -9,7 +9,10 @@ export class CoursesController {
 
   @Get()
   findAll(@Query('moduleId') moduleId?: string, @Query('level') level?: string) {
-    return this.coursesService.findAll({ moduleId, level });
+    const filters: { moduleId?: string; level?: string } = {};
+    if (moduleId !== undefined) filters.moduleId = moduleId;
+    if (level !== undefined) filters.level = level;
+    return this.coursesService.findAll(filters);
   }
 
   @Get(':id')

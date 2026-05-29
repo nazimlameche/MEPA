@@ -1,6 +1,6 @@
 import { Controller, Post, Param, Body, UseGuards, Request } from '@nestjs/common';
 import { IsIn } from 'class-validator';
-import { ProgressService, type ProgressStatus } from './progress.service';
+import { ProgressService, type ProgressStatus, type UserProgressRow } from './progress.service';
 import { JwtAuthGuard } from '../../core/guards/auth.guard';
 
 class UpdateProgressDto {
@@ -18,7 +18,7 @@ export class ProgressController {
   constructor(private readonly progressService: ProgressService) {}
 
   @Post(':courseId')
-  update(@Request() req: JwtRequest, @Param('courseId') courseId: string, @Body() dto: UpdateProgressDto) {
+  update(@Request() req: JwtRequest, @Param('courseId') courseId: string, @Body() dto: UpdateProgressDto): Promise<UserProgressRow> {
     return this.progressService.upsertProgress(req.user.id, courseId, dto.status);
   }
 }

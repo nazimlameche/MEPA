@@ -1,4 +1,4 @@
-import NextAuth from 'next-auth';
+import NextAuth, { type NextAuthResult } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 
 declare module 'next-auth' {
@@ -33,7 +33,7 @@ interface ApiProfile {
   streakDays: number;
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const _nextAuth: NextAuthResult = NextAuth({
   providers: [
     Credentials({
       credentials: {
@@ -100,3 +100,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   session: { strategy: 'jwt' },
 });
+
+export const handlers: NextAuthResult['handlers'] = _nextAuth.handlers;
+export const auth: NextAuthResult['auth'] = _nextAuth.auth;
+export const signIn: NextAuthResult['signIn'] = _nextAuth.signIn;
+export const signOut: NextAuthResult['signOut'] = _nextAuth.signOut;

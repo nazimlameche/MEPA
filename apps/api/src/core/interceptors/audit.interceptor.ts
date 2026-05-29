@@ -37,12 +37,13 @@ export class AuditInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap(() => {
-        void this.auditService.log({
-          userId,
+        const entry: { userId?: string; action: string; resource: string; ipHash: string } = {
           action,
           resource: request.url,
           ipHash,
-        });
+        };
+        if (userId !== undefined) entry.userId = userId;
+        void this.auditService.log(entry);
       }),
     );
   }

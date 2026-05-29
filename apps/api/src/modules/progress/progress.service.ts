@@ -6,7 +6,7 @@ import { XP_REWARDS, LEVEL_THRESHOLDS } from '@ai-edu/shared';
 
 export type ProgressStatus = 'in_progress' | 'completed';
 
-interface UserProgressRow {
+export interface UserProgressRow {
   id: string;
   userId: string;
   courseId: string;

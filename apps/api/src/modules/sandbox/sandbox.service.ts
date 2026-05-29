@@ -1,8 +1,4 @@
-import { Injectable, TooManyRequestsException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { UserEntity } from '../users/entities/user.entity';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { MistralService } from '../../shared/mistral/mistral.service';
 import { RedisService } from '../../shared/redis/redis.service';
 
@@ -16,11 +12,8 @@ Si une question sort du cadre éducatif sur l'IA, redirige poliment la conversat
 @Injectable()
 export class SandboxService {
   constructor(
-    @InjectRepository(UserEntity)
-    private readonly usersRepo: Repository<UserEntity>,
     private readonly mistral: MistralService,
     private readonly redis: RedisService,
-    private readonly config: ConfigService,
   ) {}
 
   async sendMessage(userId: string, content: string): Promise<{ reply: string; moderated: boolean }> {
@@ -48,7 +41,8 @@ export class SandboxService {
       await this.redis.expire(key, RATE_LIMIT_WINDOW_SECONDS);
     }
     if (count > RATE_LIMIT_MAX_MESSAGES) {
-      throw new TooManyRequestsException('Limite de 10 messages par minute atteinte');
+      // CNIL: rate-limit 10 messages/minute/utilisateur
+      throw new HttpException('Limite de 10 messages par minute atteinte', HttpStatus.TOO_MANY_REQUESTS);
     }
   }
 

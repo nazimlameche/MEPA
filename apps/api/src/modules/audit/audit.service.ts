@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
-import { UserEntity } from '../users/entities/user.entity';
+import { DataSource } from 'typeorm';
 
 interface AuditEntry {
   userId?: string;
@@ -13,11 +11,7 @@ interface AuditEntry {
 
 @Injectable()
 export class AuditService {
-  constructor(
-    @InjectRepository(UserEntity)
-    private readonly usersRepo: Repository<UserEntity>,
-    private readonly dataSource: DataSource,
-  ) {}
+  constructor(private readonly dataSource: DataSource) {}
 
   async log(entry: AuditEntry): Promise<void> {
     try {

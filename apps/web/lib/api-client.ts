@@ -26,11 +26,15 @@ async function request<T>(path: string, options: FetchOptions = {}): Promise<T> 
   return res.json() as Promise<T>;
 }
 
+function withToken(token: string | undefined): Pick<FetchOptions, 'token'> {
+  return token !== undefined ? { token } : {};
+}
+
 export const apiClient = {
-  get: <T>(path: string, token?: string) => request<T>(path, { method: 'GET', token }),
+  get: <T>(path: string, token?: string) => request<T>(path, { method: 'GET', ...withToken(token) }),
   post: <T>(path: string, body: unknown, token?: string) =>
-    request<T>(path, { method: 'POST', body: JSON.stringify(body), token }),
+    request<T>(path, { method: 'POST', body: JSON.stringify(body), ...withToken(token) }),
   patch: <T>(path: string, body: unknown, token?: string) =>
-    request<T>(path, { method: 'PATCH', body: JSON.stringify(body), token }),
-  delete: <T>(path: string, token?: string) => request<T>(path, { method: 'DELETE', token }),
+    request<T>(path, { method: 'PATCH', body: JSON.stringify(body), ...withToken(token) }),
+  delete: <T>(path: string, token?: string) => request<T>(path, { method: 'DELETE', ...withToken(token) }),
 };

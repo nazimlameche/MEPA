@@ -12,7 +12,9 @@
   "dependencies": {
     "@ai-edu/shared": "workspace:*",
     "@ai-edu/ui": "workspace:*",
+    "clsx": "^2.1.1",
     "framer-motion": "^12.0.6",
+    "tailwind-merge": "^3.0.1",
     "lucide-react": "^0.475.0",
     "next": "^15.1.4",
     "next-auth": "^5.0.0-beta.25",

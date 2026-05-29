@@ -1,7 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { UserEntity } from '../users/entities/user.entity';
 import { MistralService } from '../../shared/mistral/mistral.service';
 
 interface GenerateCourseDto {
@@ -10,7 +7,7 @@ interface GenerateCourseDto {
   level: 'beginner' | 'intermediate' | 'advanced';
 }
 
-interface GeneratedCourse {
+export interface GeneratedCourse {
   title: string;
   sections: Array<{ heading: string; content: string }>;
   exercises: Array<{ question: string; hint: string }>;
@@ -18,13 +15,9 @@ interface GeneratedCourse {
 
 @Injectable()
 export class CustomCourseService {
-  constructor(
-    @InjectRepository(UserEntity)
-    private readonly usersRepo: Repository<UserEntity>,
-    private readonly mistral: MistralService,
-  ) {}
+  constructor(private readonly mistral: MistralService) {}
 
-  async generate(userId: string, dto: GenerateCourseDto): Promise<GeneratedCourse> {
+  async generate(_userId: string, dto: GenerateCourseDto): Promise<GeneratedCourse> {
     /** CNIL: verify no PII in interests before sending to Mistral */
     const sanitizedInterests = dto.interests.map((i) => i.trim().substring(0, 100));
 
@@ -41,7 +34,7 @@ Réponds en JSON avec la structure : { title, sections: [{heading, content}], ex
       return JSON.parse(raw) as GeneratedCourse;
     } catch {
       return {
-        title: 'Cours sur l\'IA',
+        title: "Cours sur l'IA",
         sections: [{ heading: 'Introduction', content: raw }],
         exercises: [],
       };

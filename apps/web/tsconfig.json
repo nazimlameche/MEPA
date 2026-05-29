@@ -2,7 +2,13 @@
   "extends": "@ai-edu/config/tsconfig/nextjs.json",
   "compilerOptions": {
     "paths": {
-      "@/*": ["./src/*"],
+      "@/app/*": ["./app/*"],
+      "@/components/*": ["./components/*"],
+      "@/lib/*": ["./lib/*"],
+      "@/hooks/*": ["./hooks/*"],
+      "@/types": ["./types/index.ts"],
+      "@/types/*": ["./types/*"],
+      "@/public/*": ["./public/*"],
       "@shared/*": ["../../packages/shared/src/*"]
     }
   },

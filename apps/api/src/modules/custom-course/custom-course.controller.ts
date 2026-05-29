@@ -1,6 +1,6 @@
 import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
 import { IsArray, IsString, ArrayMaxSize, IsIn } from 'class-validator';
-import { CustomCourseService } from './custom-course.service';
+import { CustomCourseService, type GeneratedCourse } from './custom-course.service';
 import { JwtAuthGuard } from '../../core/guards/auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
@@ -27,7 +27,7 @@ export class CustomCourseController {
   constructor(private readonly customCourseService: CustomCourseService) {}
 
   @Post('generate')
-  generate(@Request() req: JwtRequest, @Body() dto: GenerateDto) {
+  generate(@Request() req: JwtRequest, @Body() dto: GenerateDto): Promise<GeneratedCourse> {
     return this.customCourseService.generate(req.user.id, dto);
   }
 }

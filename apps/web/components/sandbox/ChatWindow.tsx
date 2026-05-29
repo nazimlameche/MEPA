@@ -27,7 +27,7 @@ export default function ChatWindow() {
           </p>
         )}
         {messages.map((msg, i) => (
-          <MessageBubble key={i} role={msg.role} content={msg.content} moderated={msg.moderated} />
+          <MessageBubble key={i} role={msg.role} content={msg.content} moderated={msg.moderated ?? false} />
         ))}
         {loading && (
           <div className="flex justify-start">
