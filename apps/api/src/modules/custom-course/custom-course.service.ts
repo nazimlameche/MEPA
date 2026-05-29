@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { MistralService } from '../../shared/mistral/mistral.service';
+import { Inject, Injectable } from '@nestjs/common';
+import type { AIProvider } from '@ai-edu/shared';
+import { AI_PROVIDER } from '../../shared/ai/ai-provider.token';
 
 interface GenerateCourseDto {
   /** CNIL: interests must be anonymized — no name, email, or user identifier */
@@ -13,29 +14,33 @@ export interface GeneratedCourse {
   exercises: Array<{ question: string; hint: string }>;
 }
 
+const SYSTEM_PROMPT = 'Tu es un expert pédagogique en IA. Génère des cours clairs et adaptés aux jeunes.';
+
 @Injectable()
 export class CustomCourseService {
-  constructor(private readonly mistral: MistralService) {}
+  constructor(
+    @Inject(AI_PROVIDER) private readonly aiProvider: AIProvider,
+  ) {}
 
   async generate(_userId: string, dto: GenerateCourseDto): Promise<GeneratedCourse> {
-    /** CNIL: verify no PII in interests before sending to Mistral */
+    // CNIL: interests anonymisés avant cet appel — on tronque par sécurité
     const sanitizedInterests = dto.interests.map((i) => i.trim().substring(0, 100));
 
     const prompt = `Crée un cours de niveau ${dto.level} sur l'IA et ses risques, adapté à des jeunes,
 centré sur les thèmes suivants : ${sanitizedInterests.join(', ')}.
 Réponds en JSON avec la structure : { title, sections: [{heading, content}], exercises: [{question, hint}] }`;
 
-    const raw = await this.mistral.chat(
-      [{ role: 'user' as const, content: prompt }],
-      'Tu es un expert pédagogique en IA. Génère des cours clairs et adaptés aux jeunes.',
+    const response = await this.aiProvider.chat(
+      [{ role: 'user', content: prompt }],
+      { systemPrompt: SYSTEM_PROMPT },
     );
 
     try {
-      return JSON.parse(raw) as GeneratedCourse;
+      return JSON.parse(response.content) as GeneratedCourse;
     } catch {
       return {
         title: "Cours sur l'IA",
-        sections: [{ heading: 'Introduction', content: raw }],
+        sections: [{ heading: 'Introduction', content: response.content }],
         exercises: [],
       };
     }

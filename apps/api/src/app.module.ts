@@ -11,7 +11,8 @@ import { CustomCourseModule } from './modules/custom-course/custom-course.module
 import { AuditModule } from './modules/audit/audit.module';
 import { DatabaseModule } from './shared/database/database.module';
 import { RedisModule } from './shared/redis/redis.module';
-import { MistralModule } from './shared/mistral/mistral.module';
+import { AIModule } from './shared/ai/ai.module';
+import { PromptingModule } from './modules/prompting/prompting.module';
 import { UserEntity } from './modules/users/entities/user.entity';
 import { CourseEntity } from './modules/courses/entities/course.entity';
 
@@ -36,11 +37,12 @@ import { CourseEntity } from './modules/courses/entities/course.entity';
     ModuleRegistryModule,
     DatabaseModule,
     RedisModule,
-    MistralModule,
+    AIModule,
     AuthModule,
     UsersModule,
     CoursesModule,
     ProgressModule,
+    PromptingModule,
     SandboxModule,
     CustomCourseModule,
     AuditModule,

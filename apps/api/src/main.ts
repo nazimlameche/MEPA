@@ -4,6 +4,10 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap(): Promise<void> {
+  if (!process.env['GEMINI_API_KEY']) {
+    throw new Error('GEMINI_API_KEY is required');
+  }
+
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({

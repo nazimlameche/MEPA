@@ -1,5 +1,6 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { MistralService } from '../../shared/mistral/mistral.service';
+import { Inject, Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import type { AIProvider } from '@ai-edu/shared';
+import { AI_PROVIDER } from '../../shared/ai/ai-provider.token';
 import { RedisService } from '../../shared/redis/redis.service';
 
 const RATE_LIMIT_WINDOW_SECONDS = 60;
@@ -12,26 +13,27 @@ Si une question sort du cadre éducatif sur l'IA, redirige poliment la conversat
 @Injectable()
 export class SandboxService {
   constructor(
-    private readonly mistral: MistralService,
+    @Inject(AI_PROVIDER) private readonly aiProvider: AIProvider,
     private readonly redis: RedisService,
   ) {}
 
   async sendMessage(userId: string, content: string): Promise<{ reply: string; moderated: boolean }> {
     await this.enforceRateLimit(userId);
 
-    const isOffensive = await this.mistral.moderate(content);
-    if (isOffensive) {
+    // CNIL: aucune PII ne doit transiter — contenu utilisateur brut envoyé après modération
+    const moderation = await this.aiProvider.moderate(content);
+    if (moderation.flagged) {
       return { reply: 'Ce message a été filtré car il ne respecte pas les règles de la plateforme.', moderated: true };
     }
 
-    const reply = await this.mistral.chat(
-      [{ role: 'user' as const, content }],
-      SANDBOX_SYSTEM_PROMPT,
+    const response = await this.aiProvider.chat(
+      [{ role: 'user', content }],
+      { systemPrompt: SANDBOX_SYSTEM_PROMPT },
     );
 
-    await this.persistMessage(userId, content, reply);
+    await this.persistMessage(userId, content, response.content);
 
-    return { reply, moderated: false };
+    return { reply: response.content, moderated: false };
   }
 
   private async enforceRateLimit(userId: string): Promise<void> {
