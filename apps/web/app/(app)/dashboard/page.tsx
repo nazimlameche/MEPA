@@ -1,48 +1,102 @@
 import { auth } from '@/lib/auth';
-import Link from 'next/link';
-import { BookOpen, Wand2, MessageSquare, Sparkles } from 'lucide-react';
-import { MODULE_CONFIGS } from '@ai-edu/shared';
-
-const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  BookOpen,
-  Wand2,
-  MessageSquare,
-  Sparkles,
-};
+import { mockUserProgress, mockModules, mockRecentActivity } from '@/lib/mock/dashboard-data';
+import XPBar from '@/components/dashboard/XPBar';
+import StatCard from '@/components/dashboard/StatCard';
+import ModuleCard from '@/components/dashboard/ModuleCard';
+import ActivityFeed from '@/components/dashboard/ActivityFeed';
 
 export default async function DashboardPage() {
-  const session = await auth();
+  const session  = await auth();
+  const progress = mockUserProgress;
+  const modules  = mockModules;
+  const activity = mockRecentActivity;
+
+  const firstName = session?.user?.name?.split(' ')[0] ?? 'toi';
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-6xl mx-auto space-y-8">
+
+      {/* En-tête */}
       <div>
-        <h1 className="font-display text-2xl font-bold text-gray-900">
-          Bonjour{session?.user?.name ? `, ${session.user.name}` : ''} 👋
+        <h1
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 'clamp(1.5rem, 3vw, 2rem)',
+            fontWeight: 700,
+            color: 'var(--color-text-primary)',
+            marginBottom: '4px',
+          }}
+        >
+          Bonjour, {firstName} 👋
         </h1>
-        <p className="text-gray-500 mt-1">Prêt à explorer l&apos;IA ? Choisis ton module ci-dessous.</p>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
+          Continue ta progression — tu es à {progress.xpToNextLevel - progress.xp} XP du niveau {progress.level + 1}.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {MODULE_CONFIGS.map((mod) => {
-          const Icon = ICONS[mod.icon] ?? BookOpen;
-          return (
-            <Link
-              key={mod.id}
-              href={mod.route}
-              className="group flex items-start gap-4 rounded-2xl border border-surface-200 bg-white p-5 shadow-sm hover:border-primary-300 hover:shadow-md transition-all duration-200"
-            >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-50 group-hover:bg-primary-100 transition-colors">
-                <Icon className="h-5 w-5 text-primary-600" />
-              </div>
-              <div>
-                <h3 className="font-display font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
-                  {mod.label}
-                </h3>
-                <p className="text-xs text-gray-400 mt-0.5 capitalize">{mod.category}</p>
-              </div>
-            </Link>
-          );
-        })}
+      {/* XP Bar */}
+      <XPBar
+        xp={progress.xp}
+        xpToNextLevel={progress.xpToNextLevel}
+        level={progress.level}
+      />
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard
+          emoji="🔥"
+          label="Jours consécutifs"
+          value={progress.streak}
+          sub="Streak actuel"
+        />
+        <StatCard
+          emoji="⚡"
+          label="XP total"
+          value={progress.xp}
+          sub={`Niveau ${progress.level}`}
+        />
+        <StatCard
+          emoji="📗"
+          label="Cours terminés"
+          value={progress.completedCourses}
+          sub={`sur ${progress.totalCourses}`}
+        />
+        <StatCard
+          emoji="🎯"
+          label="Taux de complétion"
+          value={`${Math.round((progress.completedCourses / progress.totalCourses) * 100)}%`}
+          sub="Objectif : 100%"
+        />
+      </div>
+
+      {/* Modules + Activité */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Modules — 2/3 de la largeur */}
+        <div className="lg:col-span-2 space-y-4">
+          <h2
+            className="text-sm font-semibold uppercase tracking-wider"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
+            Modules
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {modules.map(mod => (
+              <ModuleCard key={mod.id} mod={mod} />
+            ))}
+          </div>
+        </div>
+
+        {/* Activité — 1/3 */}
+        <div className="space-y-4">
+          <h2
+            className="text-sm font-semibold uppercase tracking-wider"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
+            Récent
+          </h2>
+          <ActivityFeed activities={activity} />
+        </div>
       </div>
     </div>
   );

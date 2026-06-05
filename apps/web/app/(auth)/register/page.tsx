@@ -1,94 +1,336 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+
+type Level = 'college' | 'lycee' | 'universite' | 'teacher';
+
+const LEVELS: { value: Level; label: string; emoji: string }[] = [
+  { value: 'college',    label: 'Collégien·ne',   emoji: '🎒' },
+  { value: 'lycee',      label: 'Lycéen·ne',      emoji: '📖' },
+  { value: 'universite', label: 'Étudiant·e',     emoji: '🎓' },
+  { value: 'teacher',    label: 'Enseignant·e',   emoji: '🏫' },
+];
+
+const CURRENT_YEAR = new Date().getFullYear();
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const [form, setForm] = useState({ email: '', password: '', role: 'student', birthYear: '' });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [step, setStep]           = useState<1 | 2>(1);
+  const [email, setEmail]         = useState('');
+  const [password, setPassword]   = useState('');
+  const [level, setLevel]         = useState<Level | ''>('');
+  const [birthYear, setBirthYear] = useState('');
+  const [error, setError]         = useState('');
+  const [loading, setLoading]     = useState(false);
 
-  function update(field: string, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  }
+  const validateStep1 = () => {
+    if (!email || !email.includes('@')) { setError('Adresse email invalide.'); return false; }
+    if (password.length < 8)           { setError('Le mot de passe doit faire au moins 8 caractères.'); return false; }
+    return true;
+  };
 
-  async function handleSubmit(e: React.FormEvent) {
+  const validateStep2 = () => {
+    if (!level) { setError('Choisis ton niveau.'); return false; }
+    const year = parseInt(birthYear, 10);
+    if (!birthYear || isNaN(year) || year < 1940 || year > CURRENT_YEAR) {
+      setError('Année de naissance invalide.'); return false;
+    }
+    return true;
+  };
+
+  const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+    if (validateStep1()) setStep(2);
+  };
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, birthYear: parseInt(form.birthYear, 10) }),
-    });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!validateStep2()) return;
 
-    setLoading(false);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, level, birthYear: parseInt(birthYear, 10) }),
+      });
 
-    if (!res.ok) {
-      const data = (await res.json()) as { message?: string };
-      setError(typeof data.message === 'string' ? data.message : 'Erreur lors de l\'inscription');
-      return;
+      if (!res.ok) {
+        const data = await res.json() as { message?: string };
+        setError(data.message ?? "Une erreur est survenue.");
+        return;
+      }
+
+      await signIn('credentials', { email, password, redirect: false });
+
+      // CNIL : si âge < 15 ans → flow consentement parental
+      const age = CURRENT_YEAR - parseInt(birthYear, 10);
+      if (age < 15) {
+        window.location.href = '/consent';
+      } else {
+        window.location.href = '/dashboard';
+      }
+    } catch {
+      setError('Une erreur est survenue. Réessaie.');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const data = (await res.json()) as { requiresParentalConsent: boolean };
-    if (data.requiresParentalConsent) {
-      router.push('/consent');
-    } else {
-      router.push('/login?registered=1');
-    }
-  }
+  const handleGoogle = () => signIn('google', { callbackUrl: '/dashboard' });
 
   return (
-    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
-      <div>
-        <h2 className="font-display text-2xl font-bold text-gray-900 mb-1">Inscription</h2>
-        <p className="text-sm text-gray-500">Crée ton compte en quelques secondes.</p>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {/* Header */}
+      <div className="text-center mb-8">
+        <Link
+          href="/"
+          className="inline-block text-xl font-semibold mb-6"
+          style={{ fontFamily: 'var(--font-display)', color: 'var(--color-primary-light)' }}
+        >
+          AI·Edu
+        </Link>
+        <h1
+          className="mb-2"
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '1.75rem',
+            fontWeight: 700,
+            color: 'var(--color-text-primary)',
+          }}
+        >
+          Créer un compte
+        </h1>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
+          {step === 1 ? 'Étape 1 sur 2 — Tes identifiants' : 'Étape 2 sur 2 — Ton profil'}
+        </p>
       </div>
 
-      {error && (
-        <div className="rounded-xl bg-danger-50 border border-danger-500/20 p-3 text-sm text-danger-500">{error}</div>
-      )}
-
-      <div className="space-y-1">
-        <label htmlFor="email" className="text-sm font-medium text-gray-700">Email</label>
-        <input id="email" type="email" required value={form.email} onChange={(e) => update('email', e.target.value)}
-          className="w-full rounded-xl border border-surface-200 px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition" />
+      {/* Indicateur de progression */}
+      <div className="flex gap-2 mb-6">
+        {([1, 2] as const).map(s => (
+          <div
+            key={s}
+            className="flex-1 h-1 rounded-full transition-colors duration-300"
+            style={{
+              background: s <= step ? 'var(--color-primary)' : 'var(--color-surface-border)',
+            }}
+          />
+        ))}
       </div>
 
-      <div className="space-y-1">
-        <label htmlFor="password" className="text-sm font-medium text-gray-700">Mot de passe</label>
-        <input id="password" type="password" required minLength={8} value={form.password} onChange={(e) => update('password', e.target.value)}
-          className="w-full rounded-xl border border-surface-200 px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition" />
+      {/* Card */}
+      <div
+        className="rounded-2xl p-8"
+        style={{
+          background: 'var(--color-surface-card)',
+          border: '1px solid var(--color-surface-border)',
+        }}
+      >
+        {step === 1 && (
+          <>
+            <button
+              onClick={handleGoogle}
+              className="w-full flex items-center justify-center gap-3 py-3 rounded-xl mb-6 font-medium text-sm transition-colors duration-200"
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid var(--color-surface-border)',
+                color: 'var(--color-text-primary)',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.09)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+            >
+              <GoogleIcon />
+              Continuer avec Google
+            </button>
+
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex-1 h-px" style={{ background: 'var(--color-surface-border)' }} />
+              <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>ou</span>
+              <div className="flex-1 h-px" style={{ background: 'var(--color-surface-border)' }} />
+            </div>
+
+            <form onSubmit={handleNext} className="flex flex-col gap-4" noValidate>
+              <Field
+                id="email" label="Adresse email" type="email"
+                value={email} onChange={setEmail}
+                placeholder="ton@email.fr" autoComplete="email"
+              />
+              <Field
+                id="password" label="Mot de passe" type="password"
+                value={password} onChange={setPassword}
+                placeholder="8 caractères minimum" autoComplete="new-password"
+              />
+              {error && <ErrorBox message={error} />}
+              <SubmitButton label="Continuer →" loading={false} />
+            </form>
+          </>
+        )}
+
+        {step === 2 && (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+                Ton niveau scolaire
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {LEVELS.map(l => (
+                  <button
+                    key={l.value}
+                    type="button"
+                    onClick={() => setLevel(l.value)}
+                    className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium text-left transition-colors duration-150"
+                    style={{
+                      background: level === l.value ? 'rgba(76,31,212,0.2)' : 'rgba(255,255,255,0.04)',
+                      border: `1px solid ${level === l.value ? 'var(--color-primary)' : 'var(--color-surface-border)'}`,
+                      color: level === l.value ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                    }}
+                  >
+                    <span>{l.emoji}</span>
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <Field
+              id="birthYear" label="Année de naissance" type="number"
+              value={birthYear} onChange={setBirthYear}
+              placeholder="Ex : 2008"
+              autoComplete="bday-year"
+              inputMode="numeric"
+            />
+
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+              Ton année de naissance nous permet de respecter la réglementation RGPD.
+              Si tu as moins de 15 ans, un accord parental sera demandé.
+            </p>
+
+            {error && <ErrorBox message={error} />}
+
+            <div className="flex gap-3 mt-1">
+              <button
+                type="button"
+                onClick={() => { setStep(1); setError(''); }}
+                className="flex-1 py-3 rounded-xl text-sm font-medium transition-colors duration-200"
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid var(--color-surface-border)',
+                  color: 'var(--color-text-secondary)',
+                }}
+              >
+                ← Retour
+              </button>
+              <SubmitButton label="Créer mon compte" loading={loading} className="flex-1" />
+            </div>
+          </form>
+        )}
       </div>
 
-      <div className="space-y-1">
-        <label htmlFor="role" className="text-sm font-medium text-gray-700">Je suis…</label>
-        <select id="role" value={form.role} onChange={(e) => update('role', e.target.value)}
-          className="w-full rounded-xl border border-surface-200 px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition bg-white">
-          <option value="student">Élève / Étudiant</option>
-          <option value="teacher">Enseignant</option>
-        </select>
-      </div>
-
-      <div className="space-y-1">
-        <label htmlFor="birthYear" className="text-sm font-medium text-gray-700">Année de naissance</label>
-        <input id="birthYear" type="number" required min={1900} max={new Date().getFullYear()} value={form.birthYear}
-          onChange={(e) => update('birthYear', e.target.value)}
-          className="w-full rounded-xl border border-surface-200 px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition" />
-      </div>
-
-      <button type="submit" disabled={loading}
-        className="w-full rounded-xl bg-primary-500 text-white font-semibold py-2.5 text-sm hover:bg-primary-600 transition disabled:opacity-60">
-        {loading ? 'Inscription…' : 'Créer mon compte'}
-      </button>
-
-      <p className="text-center text-sm text-gray-500">
-        Déjà inscrit ?{' '}
-        <Link href="/login" className="text-primary-600 font-medium hover:underline">Se connecter</Link>
+      {/* Lien connexion */}
+      <p className="text-center mt-6 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+        Déjà un compte ?{' '}
+        <Link
+          href="/login"
+          className="font-medium transition-colors duration-200"
+          style={{ color: 'var(--color-primary-light)' }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-text-primary)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-primary-light)')}
+        >
+          Se connecter
+        </Link>
       </p>
-    </form>
+    </motion.div>
+  );
+}
+
+function Field({
+  id, label, type, value, onChange, placeholder, autoComplete, inputMode,
+}: {
+  id: string;
+  label: string;
+  type: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  autoComplete?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+        {label}
+      </label>
+      <input
+        id={id}
+        type={type}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        inputMode={inputMode}
+        className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-colors duration-200"
+        style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid var(--color-surface-border)',
+          color: 'var(--color-text-primary)',
+        }}
+        onFocus={e => (e.currentTarget.style.borderColor = 'var(--color-primary-light)')}
+        onBlur={e => (e.currentTarget.style.borderColor = 'var(--color-surface-border)')}
+      />
+    </div>
+  );
+}
+
+function ErrorBox({ message }: { message: string }) {
+  return (
+    <p
+      className="text-sm px-4 py-3 rounded-xl"
+      style={{
+        color: 'var(--color-danger)',
+        background: 'rgba(239,68,68,0.08)',
+        border: '1px solid rgba(239,68,68,0.2)',
+      }}
+    >
+      {message}
+    </p>
+  );
+}
+
+function SubmitButton({ label, loading, className = '' }: { label: string; loading: boolean; className?: string }) {
+  return (
+    <button
+      type="submit"
+      disabled={loading}
+      className={`py-3 rounded-xl font-semibold text-sm transition-colors duration-200 ${className}`}
+      style={{
+        background: loading ? 'rgba(76,31,212,0.5)' : 'var(--color-primary)',
+        color: '#fff',
+        cursor: loading ? 'not-allowed' : 'pointer',
+      }}
+      onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'var(--color-primary-light)'; }}
+      onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'var(--color-primary)'; }}
+    >
+      {loading ? 'Chargement…' : label}
+    </button>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4" />
+      <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853" />
+      <path d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05" />
+      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335" />
+    </svg>
   );
 }

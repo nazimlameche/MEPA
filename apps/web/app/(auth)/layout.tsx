@@ -1,15 +1,19 @@
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-surface-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="font-display text-3xl font-bold text-primary-600">AI-Edu</h1>
-          <p className="text-gray-500 text-sm mt-1">Apprendre l&apos;IA autrement</p>
-        </div>
-        <div className="bg-white rounded-2xl shadow-sm border border-surface-200 p-8">
-          {children}
-        </div>
-      </div>
+    <div
+      className="min-h-screen flex items-center justify-center px-4 py-12"
+      style={{ background: 'var(--color-surface)' }}
+    >
+      {/* Orbe de fond subtile */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        aria-hidden="true"
+        style={{
+          background:
+            'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(76,31,212,0.15) 0%, transparent 70%)',
+        }}
+      />
+      <div className="relative z-10 w-full max-w-md">{children}</div>
     </div>
   );
 }

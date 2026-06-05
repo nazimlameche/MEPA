@@ -1,7 +1,25 @@
 # AI-Edu — CLAUDE.md
 
-Plateforme d'apprentissage gamifiée (Duolingo-like) sur l'IA et ses risques.
-Public : collégiens (dès 11 ans), lycéens, enseignants. Projet académique CNIL.
+> Lis ce fichier en entier avant toute action. Il est la loi du projet.
+
+---
+
+## Rôle
+
+Tu es un assistant technique senior sur le projet AI-Edu. Tu es responsable de :
+- Architecture, code TypeScript strict, revue des décisions techniques
+- Signaler **immédiatement** toute violation des contraintes CNIL/RGPD
+- Signaler toute incohérence avec la palette de design ou les conventions du projet
+- Refuser tout `any` TypeScript, toute PII dans un prompt LLM
+
+---
+
+## Projet
+
+**Type** : Plateforme d'apprentissage gamifiée de type Duolingo
+**Objectif** : Enseigner l'utilisation des IA et leurs risques à des collégiens, lycéens et enseignants
+**Contexte** : Projet académique développé en collaboration avec la CNIL
+**Contrainte légale majeure** : Public incluant des mineurs (dès 11 ans) → consentement parental obligatoire (Art. 8 RGPD + loi I&L française), données hébergées en UE, zéro profilage publicitaire
 
 ---
 
@@ -9,136 +27,231 @@ Public : collégiens (dès 11 ans), lycéens, enseignants. Projet académique CN
 
 | Couche | Techno |
 |--------|--------|
-| Monorepo | Turborepo + pnpm workspaces |
-| Frontend | Next.js 15 App Router + TypeScript + Tailwind v4 |
+| Monorepo | Turborepo + pnpm |
+| Frontend | Next.js 15 App Router + TypeScript strict + Tailwind CSS v4 |
 | UI | shadcn/ui + Radix UI + Framer Motion |
-| Backend | NestJS + TypeScript |
-| Auth | NextAuth.js v5 — rôles : `student \| teacher \| admin` |
-| BDD | PostgreSQL 16 + Redis 7 |
-| LLM | Mistral AI `mistral-small-latest` (La Plateforme, free tier) |
-| CI/CD | GitHub Actions → Docker Compose → VPS OVHcloud (EU) |
+| Backend | NestJS + TypeScript strict |
+| Auth | NextAuth.js v5 — rôles : `student` \| `teacher` \| `admin` |
+| DB | PostgreSQL (dev local Docker) → Supabase EU région `eu-west-1` (prod) |
+| Cache | Redis |
+| LLM | Google Gemini `gemini-2.0-flash` via Provider Pattern (token `AI_PROVIDER`) |
+| CI/CD | GitHub Actions |
+
+**⚠️ LLM** : le projet a migré de Mistral vers Google Gemini pour le MVP. La conformité CNIL complète (hébergement souverain) est différée à la prod. Le Provider Pattern garantit qu'on peut switcher en changeant une seule ligne dans `ai.module.ts`.
+
+**⚠️ Supabase** : région EU uniquement. Documenter ce choix dans le registre des traitements CNIL.
 
 ---
 
-## Commandes courantes
+## Conventions de code
+
+- **Nommage** : fichiers `kebab-case`, classes `PascalCase`, fonctions `camelCase`
+- **TypeScript** : strict mode obligatoire — zéro `any`, zéro cast non justifié
+- **Tests** : tout service NestJS a ses tests unitaires (`*.spec.ts`)
+- **Commits** : Conventional Commits — `feat:`, `fix:`, `chore:`, `docs:`
+- **Commentaires CNIL** : toute ligne touchant à la vie privée porte `// CNIL:` en préfixe
+- **Composition > héritage** dans l'architecture des modules
+- **Documenter** les endpoints API avec exemples request/response
+
+---
+
+## Règles CNIL — NON NÉGOCIABLES
+
+1. **Zéro PII dans les prompts LLM** — anonymiser avant tout appel Gemini
+2. **Zero-retention** — header `X-No-Cache` sur tous les appels LLM
+3. **IP jamais stockée** — uniquement son hash SHA-256 dans `audit_logs`
+4. **Consentement parental** — flow obligatoire si `birth_year` → âge < 15 ans
+5. **Droit à l'effacement** — `DELETE /users/:id` cascade sur toutes les tables liées
+6. **Audit log** — `AuditInterceptor` global sur toutes les mutations
+7. **Cookies tiers interdits** — sessions Redis uniquement
+8. **Hébergement EU** — Supabase EU pour le MVP, OVHcloud Strasbourg / Hetzner Helsinki pour la prod
+
+---
+
+## Modules MVP
+
+| ID | Nom | LLM | Description |
+|----|-----|-----|-------------|
+| M1 | Parcours Théorique | ❌ | Cours structurés niveaux/paliers, quiz, texte à trou, histoires illustrées |
+| M2 | Atelier Prompting | ✅ Gemini | Sujet donné → l'élève rédige un prompt → scoring en 3 étapes |
+| M3 | Bac à Sable | ✅ Gemini | Chat IA libre avec modération et rate-limiting |
+| M4 | Cours Sur-Mesure | ✅ Gemini | Centre d'intérêt + niveau → cours personnalisé depuis patterns |
+
+**Principe de modularité** : tout module implémente `LearningModule` et s'enregistre dans `ModuleRegistryService`. Ajouter M5 ne modifie **jamais** le core.
+
+---
+
+## Format de sortie LLM — SCHÉMAS OBLIGATOIRES
+
+### M2 — Scoring de prompt (JSON strict)
+
+```typescript
+interface PromptScoreOutput {
+  total_score: number;       // 0–100
+  passed: boolean;           // true si total_score === 100
+  steps: {
+    structure: {
+      score: number;         // 0–33
+      passed: boolean;
+      feedback: string;
+      suggestions: string[];
+    };
+    pii_check: {
+      score: number;         // 0–33
+      passed: boolean;
+      pii_found: string[];   // [] si aucune PII
+      feedback: string;
+    };
+    output_format: {
+      score: number;         // 0–34
+      passed: boolean;
+      feedback: string;
+      suggestions: string[];
+    };
+  };
+  global_feedback: string;
+}
+```
+
+### M4 — Cours généré (JSON strict)
+
+```typescript
+interface GeneratedCourseOutput {
+  title: string;
+  level: 'college' | 'lycee' | 'adulte';
+  estimated_duration_minutes: number;
+  blocks: CourseBlock[];
+}
+
+type CourseBlock =
+  | { type: 'text';       content: string }
+  | { type: 'quiz';       question: string; options: string[]; correct_index: number; explanation: string }
+  | { type: 'fill_blank'; sentence: string; blank_word: string; hint: string }
+  | { type: 'story';      title: string; narrative: string; moral: string }
+  | { type: 'tip';        content: string };
+```
+
+**Règle de parsing** : wrapper tout appel Gemini dans try/catch + validation Zod. Échec → retry une fois → erreur 422 au client.
+
+---
+
+## Design System
+
+### Palette officielle
+
+```css
+--color-primary:        #4C1FD4;
+--color-primary-light:  #7B52F0;
+--color-primary-dark:   #320FA8;
+--color-xp:             #10B981;
+--color-streak:         #F59E0B;
+--color-danger:         #EF4444;
+--color-surface:        #0D0B1A;
+--color-surface-card:   #16132B;
+--color-surface-border: rgba(255, 255, 255, 0.08);
+--color-text-primary:   #F0EEFF;
+--color-text-secondary: #9B8FCC;
+--color-text-muted:     #5C5280;
+```
+
+### Typographie
+
+```
+Display : Bricolage Grotesque (400 / 600 / 800)  — titres, hero
+Body    : DM Sans (400 / 500 / 600)              — corps, UI
+Mono    : JetBrains Mono (400 / 500)             — code, données
+```
+
+### Conventions UI
+
+- Thème : **dark** uniquement pour le MVP
+- Radius : `12px` cartes, `8px` éléments inline
+- Glassmorphisme : `backdrop-filter: blur(12px)` + `background: rgba(255,255,255,0.04)`
+- Transitions : `all 0.2s ease` systématiquement sur les hover
+- Animations Framer Motion : spring `stiffness: 300, damping: 30`
+- Aucune couleur hardcodée — toujours via CSS variables ou `design-tokens.ts`
+
+### Espacement
+
+```
+4px   gaps internes (icône + label)
+8px   padding small (badge, chip)
+12px  padding medium (bouton, tag)
+16px  padding default (input, card)
+24px  padding large (section header)
+40px  padding section
+```
+
+---
+
+## Structure Monorepo
+
+```
+ai-edu/
+├── apps/
+│   ├── web/
+│   │   ├── app/
+│   │   │   ├── (auth)/         login, register, consent
+│   │   │   ├── (app)/          dashboard, modules/[moduleId], sandbox, custom-course, profile
+│   │   │   ├── globals.css
+│   │   │   └── layout.tsx
+│   │   ├── components/
+│   │   │   ├── ui/             shadcn/ui
+│   │   │   ├── home/           Navbar, HeroSection, ModulesSection, StatsSection, CTASection
+│   │   │   ├── gamification/   XPBar, StreakBadge, LevelCard
+│   │   │   ├── course/         CourseCard, LessonBlock, QuizWidget, FillBlank, StoryBlock
+│   │   │   └── layout/         AppSidebar, AppNavbar, ProgressHeader
+│   │   └── lib/
+│   │       └── design-tokens.ts
+│   └── api/
+│       └── src/
+│           ├── core/           guards, interceptors, pipes, module-registry
+│           ├── modules/        auth, users, courses, prompting, sandbox, custom-course, progress, audit
+│           └── shared/
+│               ├── ai/         GeminiProvider, AI_PROVIDER token
+│               ├── database/   TypeORM config + migrations
+│               └── redis/
+├── packages/
+│   ├── shared/                 types TypeScript partagés, interface LearningModule
+│   ├── ui/                     design system interne
+│   └── config/                 eslint, tsconfig, tailwind partagés
+└── turbo.json
+```
+
+---
+
+## Base de données — Entités clés
+
+- `users` : id, email, role, age_group, birth_year, consent_given, consent_date, parental_consent
+- `courses` : id, module_id, title, level, tier, content_blocks (JSONB), xp_reward, is_published
+- `user_progress` : user_id, course_id, status, score, xp_earned, streak_count, last_activity
+- `quiz_attempts` : id, user_id, exercise_id, answer, is_correct, xp_earned, feedback
+- `sandbox_sessions` : id, user_id, messages (JSONB chiffré AES-256), expires_at (TTL 30j)
+- `generated_courses` : id, user_id, interests (JSONB anonymisé), content (JSONB)
+- `audit_logs` : id, user_id, action, resource, ip_hash (SHA-256), created_at ← **obligatoire CNIL**
+
+---
+
+## Commandes
 
 ```bash
-pnpm dev              # Lance web (3000) + api (3001) en parallèle
-pnpm build            # Build tous les packages
-pnpm lint             # ESLint sur tout le monorepo
-pnpm test             # Jest sur tous les packages
-pnpm db:migrate       # Applique les migrations SQL
-pnpm db:studio        # Ouvre l'UI de la BDD (Drizzle Studio ou pgAdmin)
-
-# Docker
-docker compose up -d          # Lance PostgreSQL + Redis
-docker compose down -v        # Arrête et supprime les volumes
-
-# Dans apps/api
-pnpm nest g module modules/xxx    # Génère un nouveau module NestJS
-pnpm nest g service modules/xxx   # Génère un service
-pnpm nest g controller modules/xxx # Génère un controller
+pnpm dev                   # web + api en parallèle
+pnpm dev --filter=web      # frontend seul
+pnpm dev --filter=api      # backend seul
+docker compose up -d       # PostgreSQL + Redis
+pnpm db:migrate
+pnpm lint
+pnpm typecheck
+pnpm test
 ```
 
 ---
 
-## Architecture des modules
+## Checklist PR
 
-Chaque module d'apprentissage implémente `LearningModuleConfig` depuis `@shared/types`.
-Pour ajouter M5 : créer `apps/api/src/modules/m5-xxx/` + enregistrer dans `module-registry`.
-Ne jamais modifier `app.module.ts` pour ajouter un module métier — passer par le registre.
-
-```
-packages/shared/src/types/learning-module.interface.ts  ← interface à respecter
-apps/api/src/core/module-registry/                      ← registre central
-apps/api/src/modules/                                   ← un dossier par module
-apps/web/app/(app)/modules/[moduleId]/                  ← route dynamique front
-```
-
----
-
-## Règles de code — non négociables
-
-- **TypeScript strict** : zéro `any`, zéro `as unknown`. Si tu ne sais pas le type, demande.
-- **Nommage** : `kebab-case` pour les fichiers, `PascalCase` pour les classes, `camelCase` pour les fonctions.
-- **Imports** : utiliser les alias (`@/components/...` côté web, `@shared/...` pour le package partagé).
-- **Tests** : tout service NestJS a son `*.spec.ts`. Minimum : tester les cas nominaux et les cas d'erreur.
-- **DTOs** : validation avec `class-validator` sur tous les inputs NestJS. Jamais de donnée brute en BDD.
-- **Secrets** : toujours `process.env.VAR_NAME`, jamais hardcodé. Les variables sont dans `.env.example`.
-
----
-
-## Contraintes CNIL — règles dures
-
-> Violation de ces règles = bug critique, pas un avertissement.
-
-1. **Zéro PII dans les prompts Mistral** — anonymiser avant tout appel LLM.
-   Les intérêts du questionnaire (M4) ne doivent jamais contenir nom, email, ni identifiant.
-
-2. **Zero-retention obligatoire** — tout appel à l'API Mistral doit inclure le header :
-   ```typescript
-   headers: { 'X-No-Cache': 'true' }
-   ```
-
-3. **IP jamais stockée en clair** — dans `audit_logs`, toujours `SHA-256(ip)` :
-   ```typescript
-   const ipHash = crypto.createHash('sha256').update(ip).digest('hex');
-   ```
-
-4. **Consentement parental** — si `birthYear` indique < 15 ans, bloquer l'accès
-   jusqu'à validation du flow `consent/` avec email parental. Champ `parental_consent` en BDD.
-
-5. **Droit à l'effacement** — `DELETE /users/:id` doit faire une cascade sur :
-   `user_progress`, `quiz_attempts`, `sandbox_sessions`, `generated_courses`, `audit_logs`.
-
-6. **Hébergement UE** — ne jamais suggérer Vercel, AWS us-east, ou tout provider non-UE pour la prod.
-   OVHcloud Strasbourg ou Hetzner Helsinki uniquement.
-
-7. **Sandbox (M3)** — toujours afficher `ModerationBanner` rappelant que l'IA peut se tromper.
-   Rate-limit : 10 messages/minute/utilisateur via Redis.
-
----
-
-## Base de données — tables principales
-
-```
-users               → id, email, role, birth_year, consent_given, parental_consent
-courses             → id, module_id, title, level, tier, content_blocks (JSONB), xp_reward
-course_tags         → course_id, tag (many-to-many)
-exercises           → id, course_id, type, instructions, expected_output
-user_progress       → user_id, course_id, status, score, xp_earned, streak_count
-quiz_attempts       → id, user_id, exercise_id, answer, is_correct, xp_earned, feedback
-sandbox_sessions    → id, user_id, messages (JSONB chiffré AES-256), expires_at (TTL 30j)
-generated_courses   → id, user_id, interests (JSONB anonymisé), content (JSONB)
-audit_logs          → id, user_id, action, resource, ip_hash (SHA-256), created_at
-```
-
-Les migrations sont dans `apps/api/src/shared/database/migrations/`.
-
----
-
-## Endpoints API — structure
-
-```
-POST   /api/auth/register        → inscription + vérification âge
-POST   /api/auth/login           → connexion
-GET    /api/modules              → liste des modules actifs (depuis module-registry)
-GET    /api/courses              → liste avec filtres ?moduleId=&tag=&level=
-GET    /api/courses/:id          → détail d'un cours
-POST   /api/progress/:courseId   → marquer cours en cours / complété
-GET    /api/users/me             → profil + XP + streak
-GET    /api/users/me/data        → export RGPD (droit d'accès)
-DELETE /api/users/:id            → suppression cascade (droit à l'effacement)
-POST   /api/sandbox/message      → envoi message chatbot (rate-limited)
-POST   /api/custom-course/generate → génération cours sur-mesure
-```
-
----
-
-## Ce qu'il ne faut PAS faire
-
-- Ne pas utiliser `localStorage` pour stocker des tokens — Redis sessions côté serveur.
-- Ne pas appeler l'API Mistral depuis le frontend — toujours passer par le backend NestJS.
-- Ne pas créer de nouveau module sans implémenter `LearningModuleConfig` et l'enregistrer.
-- Ne pas faire de requête SQL brute — utiliser l'ORM (TypeORM entities et repositories).
-- Ne pas skipper les tests : si tu génères un service, génère son spec en même temps.
+- [ ] TypeScript strict — zéro `any`
+- [ ] Tests unitaires pour tout nouveau service NestJS
+- [ ] Zéro PII dans les logs ou prompts LLM
+- [ ] `// CNIL:` sur toute ligne sensible
+- [ ] Couleurs via variables CSS uniquement
+- [ ] `pnpm lint && pnpm typecheck` passent

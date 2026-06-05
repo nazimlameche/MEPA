@@ -4,8 +4,21 @@
 
 @layer base {
   :root {
+    --color-primary:        #4C1FD4;
+    --color-primary-light:  #7B52F0;
+    --color-primary-dark:   #320FA8;
+    --color-xp:             #10B981;
+    --color-streak:         #F59E0B;
+    --color-danger:         #EF4444;
+    --color-surface:        #0D0B1A;
+    --color-surface-card:   #16132B;
+    --color-surface-border: rgba(255, 255, 255, 0.08);
+    --color-text-primary:   #F0EEFF;
+    --color-text-secondary: #9B8FCC;
+    --color-text-muted:     #5C5280;
     --font-display: 'Bricolage Grotesque', sans-serif;
-    --font-body: 'DM Sans', sans-serif;
+    --font-body:    'DM Sans', sans-serif;
+    --font-mono:    'JetBrains Mono', monospace;
   }
 
   * {
@@ -14,12 +27,13 @@
 
   html {
     scroll-behavior: smooth;
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    font-family: var(--font-body);
   }
 
   body {
     font-family: var(--font-body);
-    background-color: #f8fafc;
-    color: #1e293b;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
