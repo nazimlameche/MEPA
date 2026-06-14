@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { mockModules } from '@/lib/mock/dashboard-data';
 import PageContainer from '@/components/layout/PageContainer';

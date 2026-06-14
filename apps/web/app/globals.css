@@ -99,7 +99,24 @@
   }
 }
 
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
 @layer utilities {
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--color-border)    25%,
+      var(--color-bg)        50%,
+      var(--color-border)    75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+    border-radius: 6px;
+  }
+
   .font-display {
     font-family: var(--font-display);
   }
@@ -110,5 +127,14 @@
 
   .font-mono {
     font-family: var(--font-mono);
+  }
+
+  /* Hover: muted → accent — use on links in server components instead of onMouseEnter/Leave */
+  .hover-accent {
+    color: var(--color-muted);
+    transition: color 0.15s ease;
+  }
+  .hover-accent:hover {
+    color: var(--color-accent);
   }
 }

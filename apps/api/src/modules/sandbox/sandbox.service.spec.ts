@@ -48,7 +48,7 @@ describe('SandboxService', () => {
     mockRedis.get.mockResolvedValue(null);
     mockRedis.set.mockResolvedValue('OK');
     aiProvider.moderate.mockResolvedValue({ flagged: false });
-    aiProvider.chat.mockResolvedValue({ content: 'Bonjour!', tokensUsed: 12, model: 'gemini-2.0-flash' });
+    aiProvider.chat.mockResolvedValue({ content: 'Bonjour!', tokensUsed: 12, model: 'mistral-small-latest' });
 
     const result = await service.sendMessage('user1', 'Bonjour');
 

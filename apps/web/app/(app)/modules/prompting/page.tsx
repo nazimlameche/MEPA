@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { ChevronRight, Zap } from 'lucide-react';
 import { mockExercises } from '@/lib/mock/prompting-data';

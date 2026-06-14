@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { BookOpen, Zap } from 'lucide-react';
 import type { CourseEntity } from '@/types';

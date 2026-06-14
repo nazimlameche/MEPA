@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { CourseFormData, GeneratedCourseOutput } from '@/lib/types/custom-course';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL   = process.env.GEMINI_MODEL ?? 'gemini-2.0-flash';
-const GEMINI_URL     = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
+const MISTRAL_MODEL   = process.env.MISTRAL_MODEL ?? 'mistral-small-latest';
+const MISTRAL_URL     = 'https://api.mistral.ai/v1/chat/completions';
+
+interface MistralResponse {
+  choices: { message: { content: string } }[];
+}
 
 // CNIL : anonymisation du centre d'intérêt avant injection dans le prompt
-// Le mot exact de l'utilisateur n'est jamais envoyé à Gemini
+// Le mot exact de l'utilisateur n'est jamais envoyé à Mistral
 function anonymizeInterest(interest: string): string {
   const lower = interest.toLowerCase().trim();
 
@@ -74,8 +78,8 @@ Réponds UNIQUEMENT avec ce JSON strict, sans texte avant ni après, sans balise
 }
 
 export async function POST(req: NextRequest) {
-  if (!GEMINI_API_KEY) {
-    return NextResponse.json({ message: 'GEMINI_API_KEY manquant.' }, { status: 500 });
+  if (!MISTRAL_API_KEY) {
+    return NextResponse.json({ message: 'MISTRAL_API_KEY manquant.' }, { status: 500 });
   }
 
   const body = await req.json() as Partial<CourseFormData>;
@@ -89,40 +93,39 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Niveau invalide.' }, { status: 400 });
   }
 
-  // CNIL : anonymisation avant envoi à Gemini
+  // CNIL : anonymisation avant envoi à Mistral
   const anonymizedInterest = anonymizeInterest(interest);
 
   const prompt = buildPrompt({ interest, level, context }, anonymizedInterest);
 
-  const geminiBody = {
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: {
-      temperature:     0.7,
-      maxOutputTokens: 2048,
-    },
-  };
-
   let raw: string;
   try {
-    const res = await fetch(GEMINI_URL, {
+    const res = await fetch(MISTRAL_URL, {
       method:  'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'X-No-Cache':   '1', // CNIL : zero-retention
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${MISTRAL_API_KEY}`,
+        'X-No-Cache':    '1', // CNIL : zero-retention
       },
-      body: JSON.stringify(geminiBody),
+      body: JSON.stringify({
+        model:           MISTRAL_MODEL,
+        messages:        [{ role: 'user', content: prompt }],
+        temperature:     0.7,
+        max_tokens:      2048,
+        response_format: { type: 'json_object' },
+      }),
     });
 
     if (!res.ok) {
-      return NextResponse.json({ message: 'Erreur Gemini.' }, { status: 502 });
+      const errBody = await res.json().catch(() => ({})) as Record<string, unknown>;
+      console.error('[Mistral] error', res.status, JSON.stringify(errBody));
+      return NextResponse.json({ message: 'Erreur Mistral.' }, { status: 502 });
     }
 
-    const data = await res.json() as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[];
-    };
-    raw = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    const data = await res.json() as MistralResponse;
+    raw = data.choices[0]?.message?.content ?? '';
   } catch {
-    return NextResponse.json({ message: 'Impossible de contacter Gemini.' }, { status: 502 });
+    return NextResponse.json({ message: 'Impossible de contacter Mistral.' }, { status: 502 });
   }
 
   try {
@@ -141,7 +144,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(parsed);
   } catch {
     return NextResponse.json(
-      { message: 'Réponse Gemini non parseable. Réessaie.' },
+      { message: 'Réponse Mistral non parseable. Réessaie.' },
       { status: 422 }
     );
   }

@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { Check, Clock, Zap, Lock } from 'lucide-react';
 

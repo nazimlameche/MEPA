@@ -12,7 +12,7 @@ export default async function ModulePage({ params }: { params: Promise<{ moduleI
 
   let courses: CourseEntity[] = [];
   try {
-    courses = await apiClient.get<CourseEntity[]>(`/courses/module/${moduleId}`);
+    courses = await apiClient.get<CourseEntity[]>(`/courses/module/${moduleId}`, undefined, 60);
   } catch {
     courses = [];
   }
@@ -21,13 +21,7 @@ export default async function ModulePage({ params }: { params: Promise<{ moduleI
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
         <nav className="text-xs mb-2" style={{ color: 'var(--color-muted)' }}>
-          <Link
-            href="/dashboard"
-            className="transition-colors duration-150"
-            style={{ color: 'var(--color-muted)' }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-accent)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-muted)')}
-          >
+          <Link href="/dashboard" className="hover-accent">
             Accueil
           </Link>
           <span className="mx-1">/</span>

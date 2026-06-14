@@ -14,7 +14,7 @@ export default async function CoursePage({
 
   let course: CourseEntity | null = null;
   try {
-    course = await apiClient.get<CourseEntity>(`/courses/${courseId}`);
+    course = await apiClient.get<CourseEntity>(`/courses/${courseId}`, undefined, 300);
   } catch {
     notFound();
   }
@@ -26,23 +26,11 @@ export default async function CoursePage({
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <nav className="text-xs" style={{ color: 'var(--color-muted)' }}>
-        <Link
-          href="/dashboard"
-          className="transition-colors duration-150"
-          style={{ color: 'var(--color-muted)' }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-accent)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-muted)')}
-        >
+        <Link href="/dashboard" className="hover-accent">
           Accueil
         </Link>
         <span className="mx-1">/</span>
-        <Link
-          href={`/modules/${moduleId}`}
-          className="transition-colors duration-150"
-          style={{ color: 'var(--color-muted)' }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-accent)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-muted)')}
-        >
+        <Link href={`/modules/${moduleId}`} className="hover-accent">
           Module
         </Link>
         <span className="mx-1">/</span>

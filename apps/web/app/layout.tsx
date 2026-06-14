@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
+import Providers from '@/components/Providers';
 import './globals.css';
 
 const fraunces = Fraunces({
@@ -34,7 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="fr"
       className={`${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
-      <body>{children}</body>
+      <body><Providers>{children}</Providers></body>
     </html>
   );
 }

@@ -7,6 +7,7 @@ import { ArrowLeft, Zap } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import type { Course } from '@/lib/types/course';
 import BlockRenderer from './BlockRenderer';
+import { revalidateProgress } from '@/app/actions/revalidate';
 
 interface CourseReaderProps {
   course: Course;
@@ -47,6 +48,7 @@ export default function CourseReader({ course }: CourseReaderProps) {
               }),
             },
           );
+          await revalidateProgress();
         } catch {
           // Silencieux — la complétion locale fonctionne même sans persistance
         }

@@ -29,7 +29,7 @@ describe('CustomCourseService', () => {
     aiProvider.chat.mockResolvedValueOnce({
       content: JSON.stringify(payload),
       tokensUsed: 100,
-      model: 'gemini-2.0-flash',
+      model: 'mistral-small-latest',
     });
 
     const result = await service.generate('user-1', {
@@ -44,7 +44,7 @@ describe('CustomCourseService', () => {
     aiProvider.chat.mockResolvedValueOnce({
       content: 'pas du JSON',
       tokensUsed: 5,
-      model: 'gemini-2.0-flash',
+      model: 'mistral-small-latest',
     });
 
     const result = await service.generate('user-1', {

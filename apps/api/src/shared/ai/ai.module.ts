@@ -2,7 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import type { AIProvider } from '@ai-edu/shared';
 import { AI_PROVIDER } from './ai-provider.token';
-import { GeminiProvider } from './providers/gemini.provider';
+import { MistralProvider } from './providers/mistral.provider';
 
 @Global()
 @Module({
@@ -12,9 +12,9 @@ import { GeminiProvider } from './providers/gemini.provider';
       provide: AI_PROVIDER,
       inject: [ConfigService],
       useFactory: (config: ConfigService): AIProvider =>
-        new GeminiProvider(
-          config.getOrThrow<string>('GEMINI_API_KEY'),
-          config.get<string>('GEMINI_MODEL') ?? 'gemini-2.0-flash',
+        new MistralProvider(
+          config.getOrThrow<string>('MISTRAL_API_KEY'),
+          config.get<string>('MISTRAL_MODEL') ?? 'mistral-small-latest',
         ),
     },
   ],

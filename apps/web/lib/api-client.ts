@@ -4,7 +4,11 @@ interface FetchOptions extends RequestInit {
   token?: string;
 }
 
-async function request<T>(path: string, options: FetchOptions = {}): Promise<T> {
+async function request<T>(
+  path: string,
+  options: FetchOptions = {},
+  revalidate?: number,
+): Promise<T> {
   const { token, ...rest } = options;
 
   const headers: Record<string, string> = {
@@ -16,7 +20,8 @@ async function request<T>(path: string, options: FetchOptions = {}): Promise<T> 
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, { ...rest, headers });
+  const nextOpts = revalidate !== undefined ? { next: { revalidate } } : {};
+  const res = await fetch(`${BASE_URL}${path}`, { ...rest, ...nextOpts, headers });
 
   if (!res.ok) {
     const error = (await res.json().catch(() => ({ message: 'Erreur inconnue' }))) as { message?: string };
@@ -31,7 +36,8 @@ function withToken(token: string | undefined): Pick<FetchOptions, 'token'> {
 }
 
 export const apiClient = {
-  get: <T>(path: string, token?: string) => request<T>(path, { method: 'GET', ...withToken(token) }),
+  get: <T>(path: string, token?: string, revalidate?: number) =>
+    request<T>(path, { method: 'GET', ...withToken(token) }, revalidate),
   post: <T>(path: string, body: unknown, token?: string) =>
     request<T>(path, { method: 'POST', body: JSON.stringify(body), ...withToken(token) }),
   patch: <T>(path: string, body: unknown, token?: string) =>
