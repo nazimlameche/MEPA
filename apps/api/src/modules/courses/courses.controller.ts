@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { CoursesService } from './courses.service';
 import { JwtAuthGuard } from '../../core/guards/auth.guard';
 
@@ -7,16 +7,13 @@ import { JwtAuthGuard } from '../../core/guards/auth.guard';
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}
 
-  @Get()
-  findAll(@Query('moduleId') moduleId?: string, @Query('level') level?: string) {
-    const filters: { moduleId?: string; level?: string } = {};
-    if (moduleId !== undefined) filters.moduleId = moduleId;
-    if (level !== undefined) filters.level = level;
-    return this.coursesService.findAll(filters);
+  @Get('module/:moduleId')
+  getByModule(@Param('moduleId') moduleId: string) {
+    return this.coursesService.findByModule(moduleId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  getById(@Param('id') id: string) {
     return this.coursesService.findById(id);
   }
 }

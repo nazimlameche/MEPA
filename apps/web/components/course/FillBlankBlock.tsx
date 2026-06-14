@@ -29,27 +29,20 @@ export default function FillBlankBlockComponent({ block, onValidate }: FillBlank
 
   return (
     <div
-      className="rounded-2xl p-6"
+      className="p-6"
       style={{
-        background: 'var(--color-surface-card)',
-        border: '1px solid var(--color-surface-border)',
+        background:   'var(--color-surface)',
+        border:       '1px solid var(--color-border)',
+        borderRadius: '8px',
       }}
     >
-      <div className="flex items-center gap-2 mb-5">
-        <span
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
-          style={{ background: 'rgba(245,158,11,0.15)', color: 'var(--color-streak)' }}
-        >
-          ✏️
-        </span>
-        <p className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-          Complète la phrase
-        </p>
-      </div>
+      <p className="text-sm font-medium mb-5" style={{ color: 'var(--color-muted)' }}>
+        Complète la phrase
+      </p>
 
       <p
         className="text-base leading-relaxed mb-5 flex flex-wrap items-center gap-1"
-        style={{ color: 'var(--color-text-primary)' }}
+        style={{ color: 'var(--color-ink)' }}
       >
         <span>{parts[0]}</span>
         <input
@@ -60,37 +53,41 @@ export default function FillBlankBlockComponent({ block, onValidate }: FillBlank
           disabled={confirmed}
           placeholder="..."
           aria-label="Mot manquant"
-          className="inline-block px-3 py-1 rounded-lg text-sm outline-none text-center transition-colors duration-200"
+          className="inline-block px-3 py-1 text-sm outline-none text-center transition-colors duration-200"
           style={{
-            width: `${Math.max(block.blank_word.length + 4, 8)}ch`,
-            background: confirmed
-              ? (isCorrect ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.08)')
-              : 'rgba(255,255,255,0.07)',
-            border: `1px solid ${
+            width:        `${Math.max(block.blank_word.length + 4, 8)}ch`,
+            background:   confirmed
+              ? (isCorrect ? 'var(--color-complete-soft)' : 'var(--color-error-soft)')
+              : 'var(--color-bg)',
+            border:       `1px solid ${
               confirmed
-                ? (isCorrect ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.4)')
-                : 'rgba(255,255,255,0.15)'
+                ? (isCorrect ? 'var(--color-complete)' : 'var(--color-error)')
+                : 'var(--color-border)'
             }`,
-            color: confirmed
-              ? (isCorrect ? '#10B981' : 'var(--color-danger)')
-              : 'var(--color-text-primary)',
+            borderRadius: '6px',
+            color:        confirmed
+              ? (isCorrect ? 'var(--color-complete)' : 'var(--color-error)')
+              : 'var(--color-ink)',
           }}
+          onFocus={e => { if (!confirmed) e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
+          onBlur={e => { if (!confirmed) e.currentTarget.style.borderColor = 'var(--color-border)'; }}
         />
         {parts[1] && <span>{parts[1]}</span>}
       </p>
 
       {confirmed && (
         <div
-          className="rounded-xl px-4 py-3 text-sm mb-4"
+          className="px-4 py-3 text-sm mb-4"
           style={{
-            background: isCorrect ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
-            border: `1px solid ${isCorrect ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}`,
-            color: isCorrect ? '#10B981' : 'var(--color-danger)',
+            background:   isCorrect ? 'var(--color-complete-soft)' : 'var(--color-error-soft)',
+            border:       `1px solid ${isCorrect ? 'rgba(77,124,15,0.25)' : 'rgba(185,28,28,0.25)'}`,
+            color:        isCorrect ? 'var(--color-complete)' : 'var(--color-error)',
+            borderRadius: '8px',
           }}
         >
           {isCorrect
-            ? '✅ Bonne réponse !'
-            : `❌ La bonne réponse était : "${block.blank_word}"`}
+            ? 'Bonne réponse.'
+            : `La bonne réponse était : "${block.blank_word}"`}
         </div>
       )}
 
@@ -99,12 +96,16 @@ export default function FillBlankBlockComponent({ block, onValidate }: FillBlank
           <button
             disabled={!value.trim()}
             onClick={handleConfirm}
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-200"
+            className="px-5 py-2.5 text-sm font-semibold transition-colors duration-200"
             style={{
-              background: value.trim() ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)',
-              color: value.trim() ? '#fff' : 'var(--color-text-muted)',
-              cursor: value.trim() ? 'pointer' : 'not-allowed',
+              background:   value.trim() ? 'var(--color-accent)' : 'var(--color-bg)',
+              color:        value.trim() ? '#fff' : 'var(--color-muted)',
+              cursor:       value.trim() ? 'pointer' : 'not-allowed',
+              border:       `1px solid ${value.trim() ? 'var(--color-accent)' : 'var(--color-border)'}`,
+              borderRadius: '8px',
             }}
+            onMouseEnter={e => { if (value.trim()) e.currentTarget.style.background = 'var(--color-accent-hover)'; }}
+            onMouseLeave={e => { if (value.trim()) e.currentTarget.style.background = 'var(--color-accent)'; }}
           >
             Valider
           </button>
@@ -112,16 +113,16 @@ export default function FillBlankBlockComponent({ block, onValidate }: FillBlank
             <button
               onClick={() => setShowHint(true)}
               className="text-sm transition-colors duration-200"
-              style={{ color: 'var(--color-text-muted)' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-text-secondary)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-text-muted)')}
+              style={{ color: 'var(--color-muted)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-body)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-muted)')}
             >
               Voir un indice
             </button>
           )}
           {showHint && (
-            <span className="text-sm" style={{ color: 'var(--color-streak)' }}>
-              💡 {block.hint}
+            <span className="text-sm" style={{ color: 'var(--color-accent)' }}>
+              Indice : {block.hint}
             </span>
           )}
         </div>

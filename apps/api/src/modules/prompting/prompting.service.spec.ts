@@ -1,44 +1,65 @@
-import { Test } from '@nestjs/testing';
-import type { AIProvider, AIResponse } from '@ai-edu/shared';
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { PromptingService } from './prompting.service';
-import { AI_PROVIDER } from '../../shared/ai/ai-provider.token';
+import { QuizAttempt } from './quiz-attempt.entity';
+import { ProgressService } from '../progress/progress.service';
+
+const mockRepo = {
+  create:  jest.fn(),
+  save:    jest.fn(),
+  find:    jest.fn(),
+  findOne: jest.fn(),
+};
+
+const mockProgressService = {
+  completeCourse: jest.fn().mockResolvedValue({ progress: {}, stats: {}, levelUp: false }),
+};
 
 describe('PromptingService', () => {
   let service: PromptingService;
-  let aiProvider: jest.Mocked<AIProvider>;
 
   beforeEach(async () => {
-    aiProvider = {
-      chat: jest.fn(),
-      moderate: jest.fn(),
-    };
-
-    const moduleRef = await Test.createTestingModule({
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         PromptingService,
-        { provide: AI_PROVIDER, useValue: aiProvider },
+        { provide: getRepositoryToken(QuizAttempt), useValue: mockRepo },
+        { provide: ProgressService,                 useValue: mockProgressService },
       ],
     }).compile();
 
-    service = moduleRef.get(PromptingService);
+    service = module.get<PromptingService>(PromptingService);
+    jest.clearAllMocks();
   });
 
-  it('forwards the prompt to the AI provider with the system prompt', async () => {
-    const expected: AIResponse = { content: 'feedback', tokensUsed: 10, model: 'gemini-2.0-flash' };
-    aiProvider.chat.mockResolvedValueOnce(expected);
+  describe('saveAttempt', () => {
+    it('accorde XP_PERFECT_SCORE (25) et déclenche completeCourse pour un score parfait', async () => {
+      const attempt = { id: '1', userId: 'u1', exerciseId: 'ex1', totalScore: 100, passed: true, xpEarned: 25 };
+      mockRepo.create.mockReturnValue(attempt);
+      mockRepo.save.mockResolvedValue(attempt);
 
-    const result = await service.evaluatePrompt('mon prompt', 'résultat attendu');
+      const result = await service.saveAttempt({
+        userId: 'u1', exerciseId: 'ex1', userPrompt: 'mon prompt',
+        totalScore: 100, passed: true, scoreDetail: {},
+      });
 
-    expect(result).toBe(expected);
-    expect(aiProvider.chat).toHaveBeenCalledWith(
-      [expect.objectContaining({ role: 'user' })],
-      expect.objectContaining({ systemPrompt: expect.stringContaining('évaluateur') }),
-    );
-  });
+      expect(result.xpEarned).toBe(25);
+      expect(mockProgressService.completeCourse).toHaveBeenCalledWith(
+        'u1', 'prompting-ex1', 25, 100,
+      );
+    });
 
-  it('propagates provider errors', async () => {
-    aiProvider.chat.mockRejectedValueOnce(new Error('provider down'));
+    it('accorde XP_PARTIAL_SCORE (10) et ne déclenche pas completeCourse pour un score partiel', async () => {
+      const attempt = { id: '2', userId: 'u1', exerciseId: 'ex1', totalScore: 70, passed: false, xpEarned: 10 };
+      mockRepo.create.mockReturnValue(attempt);
+      mockRepo.save.mockResolvedValue(attempt);
 
-    await expect(service.evaluatePrompt('a', 'b')).rejects.toThrow('provider down');
+      const result = await service.saveAttempt({
+        userId: 'u1', exerciseId: 'ex1', userPrompt: 'mon prompt',
+        totalScore: 70, passed: false, scoreDetail: {},
+      });
+
+      expect(result.xpEarned).toBe(10);
+      expect(mockProgressService.completeCourse).not.toHaveBeenCalled();
+    });
   });
 });

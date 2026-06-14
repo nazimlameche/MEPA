@@ -22,7 +22,7 @@ export default function Navbar() {
             { label: 'Théorie', href: '/modules/theory' },
             { label: 'Prompting', href: '/modules/prompting' },
             { label: 'Bac à Sable', href: '/sandbox' },
-            { label: 'Cours Sur-Mesure', href: '/custom-course' },
+            { label: 'Cours Sur-Mesure', href: '/modules/custom-course' },
             { label: 'Mon profil', href: '/profile' },
           ].map(({ label, href }) => (
             <Link key={href} href={href} onClick={() => setOpen(false)}

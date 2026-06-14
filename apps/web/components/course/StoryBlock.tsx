@@ -5,28 +5,28 @@ import type { StoryBlock } from '@/lib/types/course';
 
 export default function StoryBlockComponent({ block }: { block: StoryBlock }) {
   const [showMoral, setShowMoral] = useState(false);
+  const [hovered, setHovered]     = useState(false);
 
   return (
     <div
-      className="rounded-2xl p-6"
+      className="p-6"
       style={{
-        background: 'rgba(76,31,212,0.08)',
-        border: '1px solid rgba(76,31,212,0.2)',
+        background:   'var(--color-bg)',
+        border:       '1px solid var(--color-border)',
+        borderLeft:   '2px solid var(--color-accent)',
+        borderRadius: '8px',
       }}
     >
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-lg">📖</span>
-        <p
-          className="font-semibold"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text-primary)' }}
-        >
-          {block.title}
-        </p>
-      </div>
+      <p
+        className="font-semibold mb-4"
+        style={{ color: 'var(--color-ink)', fontFamily: 'var(--font-body)' }}
+      >
+        {block.title}
+      </p>
 
       <p
-        className="leading-relaxed mb-4 italic"
-        style={{ color: 'var(--color-text-secondary)', fontSize: '0.97rem' }}
+        className="leading-relaxed mb-5 italic"
+        style={{ color: 'var(--color-body)', fontSize: '0.97rem' }}
       >
         {block.narrative}
       </p>
@@ -34,24 +34,26 @@ export default function StoryBlockComponent({ block }: { block: StoryBlock }) {
       {!showMoral ? (
         <button
           onClick={() => setShowMoral(true)}
-          className="text-sm font-medium px-4 py-2 rounded-lg transition-colors duration-200"
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          className="text-sm font-medium px-4 py-2 transition-colors duration-200"
           style={{
-            background: 'rgba(76,31,212,0.15)',
-            color: 'var(--color-primary-light)',
-            border: '1px solid rgba(76,31,212,0.3)',
+            color:        hovered ? '#fff' : 'var(--color-accent)',
+            background:   hovered ? 'var(--color-accent)' : 'var(--color-accent-soft)',
+            border:       '1px solid var(--color-accent)',
+            borderRadius: '8px',
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(76,31,212,0.25)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(76,31,212,0.15)')}
         >
-          Révéler la morale →
+          Révéler la morale
         </button>
       ) : (
         <div
-          className="rounded-xl px-4 py-3 text-sm"
+          className="px-4 py-3 text-sm"
           style={{
-            background: 'rgba(76,31,212,0.12)',
-            border: '1px solid rgba(76,31,212,0.25)',
-            color: 'var(--color-primary-light)',
+            background:   'var(--color-accent-soft)',
+            border:       '1px solid rgba(15,118,110,0.2)',
+            color:        'var(--color-accent)',
+            borderRadius: '8px',
           }}
         >
           <span className="font-semibold">Morale : </span>

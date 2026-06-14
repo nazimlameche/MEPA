@@ -11,7 +11,7 @@ const NAV = [
   { label: 'Parcours Théorique', href: '/modules/theory', icon: BookOpen },
   { label: 'Atelier Prompting', href: '/modules/prompting', icon: Wand2 },
   { label: 'Bac à Sable', href: '/sandbox', icon: MessageSquare },
-  { label: 'Cours Sur-Mesure', href: '/custom-course', icon: Sparkles },
+  { label: 'Cours Sur-Mesure', href: '/modules/custom-course', icon: Sparkles },
 ];
 
 export default function Sidebar() {

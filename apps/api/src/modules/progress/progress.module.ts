@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { UserProgress } from './user-progress.entity';
+import { UserStats } from './user-stats.entity';
 import { ProgressService } from './progress.service';
 import { ProgressController } from './progress.controller';
-import { UserEntity } from '../users/entities/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserEntity])],
-  providers: [ProgressService],
+  imports:     [TypeOrmModule.forFeature([UserProgress, UserStats])],
+  providers:   [ProgressService],
   controllers: [ProgressController],
-  exports: [ProgressService],
+  exports:     [ProgressService],
 })
 export class ProgressModule {}

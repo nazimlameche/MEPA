@@ -3,15 +3,14 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 
 type Level = 'college' | 'lycee' | 'universite' | 'teacher';
 
-const LEVELS: { value: Level; label: string; emoji: string }[] = [
-  { value: 'college',    label: 'Collégien·ne',   emoji: '🎒' },
-  { value: 'lycee',      label: 'Lycéen·ne',      emoji: '📖' },
-  { value: 'universite', label: 'Étudiant·e',     emoji: '🎓' },
-  { value: 'teacher',    label: 'Enseignant·e',   emoji: '🏫' },
+const LEVELS: { value: Level; label: string }[] = [
+  { value: 'college',    label: 'Collégien·ne' },
+  { value: 'lycee',      label: 'Lycéen·ne' },
+  { value: 'universite', label: 'Étudiant·e' },
+  { value: 'teacher',    label: 'Enseignant·e' },
 ];
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -53,10 +52,10 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
+      const res = await fetch('/api/register', {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, level, birthYear: parseInt(birthYear, 10) }),
+        body:    JSON.stringify({ email, password, level, birthYear: parseInt(birthYear, 10) }),
       });
 
       if (!res.ok) {
@@ -84,32 +83,20 @@ export default function RegisterPage() {
   const handleGoogle = () => signIn('google', { callbackUrl: '/dashboard' });
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-    >
+    <div>
       {/* Header */}
       <div className="text-center mb-8">
         <Link
           href="/"
-          className="inline-block text-xl font-semibold mb-6"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--color-primary-light)' }}
+          className="inline-block text-2xl font-semibold mb-6"
+          style={{ fontFamily: 'var(--font-display)', color: 'var(--color-accent)' }}
         >
           AI·Edu
         </Link>
-        <h1
-          className="mb-2"
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '1.75rem',
-            fontWeight: 700,
-            color: 'var(--color-text-primary)',
-          }}
-        >
+        <h1 className="mb-2" style={{ fontSize: '1.75rem', fontWeight: 600 }}>
           Créer un compte
         </h1>
-        <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
+        <p style={{ color: 'var(--color-muted)', fontSize: '0.95rem' }}>
           {step === 1 ? 'Étape 1 sur 2 — Tes identifiants' : 'Étape 2 sur 2 — Ton profil'}
         </p>
       </div>
@@ -119,9 +106,10 @@ export default function RegisterPage() {
         {([1, 2] as const).map(s => (
           <div
             key={s}
-            className="flex-1 h-1 rounded-full transition-colors duration-300"
+            className="flex-1 h-1 transition-colors duration-300"
             style={{
-              background: s <= step ? 'var(--color-primary)' : 'var(--color-surface-border)',
+              background:   s <= step ? 'var(--color-accent)' : 'var(--color-border)',
+              borderRadius: '2px',
             }}
           />
         ))}
@@ -129,48 +117,42 @@ export default function RegisterPage() {
 
       {/* Card */}
       <div
-        className="rounded-2xl p-8"
+        className="p-8"
         style={{
-          background: 'var(--color-surface-card)',
-          border: '1px solid var(--color-surface-border)',
+          background:   'var(--color-surface)',
+          border:       '1px solid var(--color-border)',
+          borderRadius: '8px',
         }}
       >
         {step === 1 && (
           <>
             <button
               onClick={handleGoogle}
-              className="w-full flex items-center justify-center gap-3 py-3 rounded-xl mb-6 font-medium text-sm transition-colors duration-200"
+              className="w-full flex items-center justify-center gap-3 py-3 font-medium text-sm transition-colors duration-200"
               style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid var(--color-surface-border)',
-                color: 'var(--color-text-primary)',
+                background:   'var(--color-bg)',
+                border:       '1px solid var(--color-border)',
+                borderRadius: '8px',
+                color:        'var(--color-body)',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.09)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-border-strong)')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}
             >
               <GoogleIcon />
               Continuer avec Google
             </button>
 
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex-1 h-px" style={{ background: 'var(--color-surface-border)' }} />
-              <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>ou</span>
-              <div className="flex-1 h-px" style={{ background: 'var(--color-surface-border)' }} />
+            <div className="flex items-center gap-3 my-6">
+              <div className="flex-1 h-px" style={{ background: 'var(--color-border)' }} />
+              <span className="text-xs" style={{ color: 'var(--color-muted)' }}>ou</span>
+              <div className="flex-1 h-px" style={{ background: 'var(--color-border)' }} />
             </div>
 
             <form onSubmit={handleNext} className="flex flex-col gap-4" noValidate>
-              <Field
-                id="email" label="Adresse email" type="email"
-                value={email} onChange={setEmail}
-                placeholder="ton@email.fr" autoComplete="email"
-              />
-              <Field
-                id="password" label="Mot de passe" type="password"
-                value={password} onChange={setPassword}
-                placeholder="8 caractères minimum" autoComplete="new-password"
-              />
+              <Field id="email"    label="Adresse email"  type="email"    value={email}    onChange={setEmail}    placeholder="ton@email.fr"        autoComplete="email" />
+              <Field id="password" label="Mot de passe"   type="password" value={password} onChange={setPassword} placeholder="8 caractères minimum" autoComplete="new-password" />
               {error && <ErrorBox message={error} />}
-              <SubmitButton label="Continuer →" loading={false} />
+              <SubmitButton label="Continuer" loading={false} />
             </form>
           </>
         )}
@@ -178,23 +160,21 @@ export default function RegisterPage() {
         {step === 2 && (
           <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-                Ton niveau scolaire
-              </p>
+              <p className="text-sm font-medium" style={{ color: 'var(--color-body)' }}>Ton niveau scolaire</p>
               <div className="grid grid-cols-2 gap-2">
                 {LEVELS.map(l => (
                   <button
                     key={l.value}
                     type="button"
                     onClick={() => setLevel(l.value)}
-                    className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium text-left transition-colors duration-150"
+                    className="flex items-center px-4 py-3 text-sm font-medium text-left transition-colors duration-150"
                     style={{
-                      background: level === l.value ? 'rgba(76,31,212,0.2)' : 'rgba(255,255,255,0.04)',
-                      border: `1px solid ${level === l.value ? 'var(--color-primary)' : 'var(--color-surface-border)'}`,
-                      color: level === l.value ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                      background:   level === l.value ? 'var(--color-accent-soft)' : 'var(--color-surface)',
+                      border:       `1px solid ${level === l.value ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                      borderRadius: '8px',
+                      color:        level === l.value ? 'var(--color-accent)' : 'var(--color-body)',
                     }}
                   >
-                    <span>{l.emoji}</span>
                     {l.label}
                   </button>
                 ))}
@@ -209,7 +189,7 @@ export default function RegisterPage() {
               inputMode="numeric"
             />
 
-            <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--color-muted)' }}>
               Ton année de naissance nous permet de respecter la réglementation RGPD.
               Si tu as moins de 15 ans, un accord parental sera demandé.
             </p>
@@ -220,14 +200,15 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => { setStep(1); setError(''); }}
-                className="flex-1 py-3 rounded-xl text-sm font-medium transition-colors duration-200"
+                className="flex-1 py-3 text-sm font-medium transition-colors duration-200"
                 style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid var(--color-surface-border)',
-                  color: 'var(--color-text-secondary)',
+                  background:   'var(--color-surface)',
+                  border:       '1px solid var(--color-border)',
+                  borderRadius: '8px',
+                  color:        'var(--color-body)',
                 }}
               >
-                ← Retour
+                Retour
               </button>
               <SubmitButton label="Créer mon compte" loading={loading} className="flex-1" />
             </div>
@@ -236,37 +217,32 @@ export default function RegisterPage() {
       </div>
 
       {/* Lien connexion */}
-      <p className="text-center mt-6 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+      <p className="text-center mt-6 text-sm" style={{ color: 'var(--color-muted)' }}>
         Déjà un compte ?{' '}
         <Link
           href="/login"
           className="font-medium transition-colors duration-200"
-          style={{ color: 'var(--color-primary-light)' }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-text-primary)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-primary-light)')}
+          style={{ color: 'var(--color-accent)' }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-accent-hover)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-accent)')}
         >
           Se connecter
         </Link>
       </p>
-    </motion.div>
+    </div>
   );
 }
 
 function Field({
   id, label, type, value, onChange, placeholder, autoComplete, inputMode,
 }: {
-  id: string;
-  label: string;
-  type: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  autoComplete?: string;
-  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+  id: string; label: string; type: string; value: string;
+  onChange: (v: string) => void; placeholder?: string;
+  autoComplete?: string; inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+      <label htmlFor={id} className="text-sm font-medium" style={{ color: 'var(--color-body)' }}>
         {label}
       </label>
       <input
@@ -277,14 +253,15 @@ function Field({
         placeholder={placeholder}
         autoComplete={autoComplete}
         inputMode={inputMode}
-        className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-colors duration-200"
+        className="w-full px-4 py-3 text-sm outline-none transition-colors duration-200"
         style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid var(--color-surface-border)',
-          color: 'var(--color-text-primary)',
+          background:   'var(--color-surface)',
+          border:       '1px solid var(--color-border)',
+          borderRadius: '8px',
+          color:        'var(--color-ink)',
         }}
-        onFocus={e => (e.currentTarget.style.borderColor = 'var(--color-primary-light)')}
-        onBlur={e => (e.currentTarget.style.borderColor = 'var(--color-surface-border)')}
+        onFocus={e => (e.currentTarget.style.borderColor = 'var(--color-accent)')}
+        onBlur={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}
       />
     </div>
   );
@@ -293,11 +270,12 @@ function Field({
 function ErrorBox({ message }: { message: string }) {
   return (
     <p
-      className="text-sm px-4 py-3 rounded-xl"
+      className="text-sm px-4 py-3"
       style={{
-        color: 'var(--color-danger)',
-        background: 'rgba(239,68,68,0.08)',
-        border: '1px solid rgba(239,68,68,0.2)',
+        color:        'var(--color-error)',
+        background:   'var(--color-error-soft)',
+        border:       '1px solid rgba(185,28,28,0.2)',
+        borderRadius: '8px',
       }}
     >
       {message}
@@ -310,14 +288,16 @@ function SubmitButton({ label, loading, className = '' }: { label: string; loadi
     <button
       type="submit"
       disabled={loading}
-      className={`py-3 rounded-xl font-semibold text-sm transition-colors duration-200 ${className}`}
+      className={`py-3 font-semibold text-sm transition-colors duration-200 ${className}`}
       style={{
-        background: loading ? 'rgba(76,31,212,0.5)' : 'var(--color-primary)',
-        color: '#fff',
-        cursor: loading ? 'not-allowed' : 'pointer',
+        background:   loading ? 'var(--color-accent-soft)' : 'var(--color-accent)',
+        color:        loading ? 'var(--color-accent)' : '#fff',
+        cursor:       loading ? 'not-allowed' : 'pointer',
+        borderRadius: '8px',
+        border:       'none',
       }}
-      onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'var(--color-primary-light)'; }}
-      onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'var(--color-primary)'; }}
+      onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'var(--color-accent-hover)'; }}
+      onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'var(--color-accent)'; }}
     >
       {loading ? 'Chargement…' : label}
     </button>

@@ -22,44 +22,37 @@ export default function QuizBlockComponent({ block, onValidate }: QuizBlockProps
 
   return (
     <div
-      className="rounded-2xl p-6"
+      className="p-6"
       style={{
-        background: 'var(--color-surface-card)',
-        border: '1px solid var(--color-surface-border)',
+        background:   'var(--color-surface)',
+        border:       '1px solid var(--color-border)',
+        borderRadius: '8px',
       }}
     >
-      <div className="flex items-start gap-3 mb-5">
-        <span
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5"
-          style={{ background: 'rgba(76,31,212,0.2)', color: 'var(--color-primary-light)' }}
-        >
-          ?
-        </span>
-        <p className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-          {block.question}
-        </p>
-      </div>
+      <p className="font-semibold mb-5" style={{ color: 'var(--color-ink)' }}>
+        {block.question}
+      </p>
 
       <div className="flex flex-col gap-2 mb-4">
         {block.options.map((option, i) => {
-          let borderColor = 'var(--color-surface-border)';
-          let bg = 'rgba(255,255,255,0.03)';
-          let color = 'var(--color-text-secondary)';
+          let borderColor = 'var(--color-border)';
+          let bg          = 'var(--color-surface)';
+          let color       = 'var(--color-body)';
 
           if (confirmed) {
             if (i === block.correct_index) {
-              borderColor = 'rgba(16,185,129,0.5)';
-              bg = 'rgba(16,185,129,0.1)';
-              color = '#10B981';
+              borderColor = 'var(--color-complete)';
+              bg          = 'var(--color-complete-soft)';
+              color       = 'var(--color-complete)';
             } else if (i === selected && !isCorrect) {
-              borderColor = 'rgba(239,68,68,0.5)';
-              bg = 'rgba(239,68,68,0.08)';
-              color = 'var(--color-danger)';
+              borderColor = 'var(--color-error)';
+              bg          = 'var(--color-error-soft)';
+              color       = 'var(--color-error)';
             }
           } else if (i === selected) {
-            borderColor = 'var(--color-primary)';
-            bg = 'rgba(76,31,212,0.12)';
-            color = 'var(--color-text-primary)';
+            borderColor = 'var(--color-accent)';
+            bg          = 'var(--color-accent-soft)';
+            color       = 'var(--color-accent)';
           }
 
           return (
@@ -67,17 +60,22 @@ export default function QuizBlockComponent({ block, onValidate }: QuizBlockProps
               key={i}
               disabled={confirmed}
               onClick={() => !confirmed && setSelected(i)}
-              className="w-full text-left px-4 py-3 rounded-xl text-sm transition-colors duration-150"
+              className="w-full text-left px-4 py-3 text-sm transition-colors duration-150"
               style={{
-                background: bg,
-                border: `1px solid ${borderColor}`,
+                background:   bg,
+                border:       `1px solid ${borderColor}`,
+                borderRadius: '8px',
                 color,
-                cursor: confirmed ? 'default' : 'pointer',
+                cursor:       confirmed ? 'default' : 'pointer',
               }}
             >
               <span
-                className="inline-flex w-5 h-5 rounded-md items-center justify-center text-xs font-semibold mr-2 flex-shrink-0"
-                style={{ background: 'rgba(255,255,255,0.07)' }}
+                className="inline-flex w-5 h-5 items-center justify-center text-xs font-semibold mr-2 flex-shrink-0"
+                style={{
+                  background:   'var(--color-border)',
+                  borderRadius: '4px',
+                  color:        'var(--color-muted)',
+                }}
               >
                 {String.fromCharCode(65 + i)}
               </span>
@@ -89,15 +87,16 @@ export default function QuizBlockComponent({ block, onValidate }: QuizBlockProps
 
       {confirmed && (
         <div
-          className="rounded-xl px-4 py-3 text-sm mb-4"
+          className="px-4 py-3 text-sm mb-4"
           style={{
-            background: isCorrect ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
-            border: `1px solid ${isCorrect ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}`,
-            color: isCorrect ? '#10B981' : 'var(--color-danger)',
+            background:   isCorrect ? 'var(--color-complete-soft)' : 'var(--color-error-soft)',
+            border:       `1px solid ${isCorrect ? 'rgba(77,124,15,0.25)' : 'rgba(185,28,28,0.25)'}`,
+            color:        isCorrect ? 'var(--color-complete)' : 'var(--color-error)',
+            borderRadius: '8px',
           }}
         >
-          <span className="font-semibold">{isCorrect ? '✅ Correct ! ' : '❌ Pas tout à fait. '}</span>
-          <span style={{ color: 'var(--color-text-secondary)' }}>{block.explanation}</span>
+          <span className="font-semibold">{isCorrect ? 'Correct. ' : 'Pas tout à fait. '}</span>
+          <span style={{ color: 'var(--color-body)' }}>{block.explanation}</span>
         </div>
       )}
 
@@ -105,13 +104,16 @@ export default function QuizBlockComponent({ block, onValidate }: QuizBlockProps
         <button
           disabled={selected === null}
           onClick={handleConfirm}
-          className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-200"
+          className="px-5 py-2.5 text-sm font-semibold transition-colors duration-200"
           style={{
-            background: selected !== null ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)',
-            color: selected !== null ? '#fff' : 'var(--color-text-muted)',
-            cursor: selected !== null ? 'pointer' : 'not-allowed',
-            border: '1px solid transparent',
+            background:   selected !== null ? 'var(--color-accent)' : 'var(--color-bg)',
+            color:        selected !== null ? '#fff' : 'var(--color-muted)',
+            cursor:       selected !== null ? 'pointer' : 'not-allowed',
+            border:       `1px solid ${selected !== null ? 'var(--color-accent)' : 'var(--color-border)'}`,
+            borderRadius: '8px',
           }}
+          onMouseEnter={e => { if (selected !== null) e.currentTarget.style.background = 'var(--color-accent-hover)'; }}
+          onMouseLeave={e => { if (selected !== null) e.currentTarget.style.background = 'var(--color-accent)'; }}
         >
           Valider ma réponse
         </button>

@@ -1,52 +1,133 @@
-import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
-import { User, Trophy, Flame } from 'lucide-react';
-import LevelCard from '@/components/gamification/LevelCard';
-import StreakBadge from '@/components/gamification/StreakBadge';
+'use client';
 
-export default async function ProfilePage() {
-  const session = await auth();
-  if (!session?.user) redirect('/login');
+import { useState } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import { Trash2 } from 'lucide-react';
+import PageContainer from '@/components/layout/PageContainer';
+import PageHeader from '@/components/layout/PageHeader';
+import Section from '@/components/layout/Section';
 
-  const roleLabels: Record<string, string> = {
-    student: 'Élève',
-    teacher: 'Enseignant',
-    admin: 'Administrateur',
+export default function ProfilePage() {
+  const { data: session }       = useSession();
+  const [confirm, setConfirm]   = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!confirm) { setConfirm(true); return; }
+
+    setDeleting(true);
+    try {
+      const token  = session?.accessToken;
+      const userId = session?.user?.id;
+      if (!token || !userId) throw new Error('Session invalide');
+
+      const res = await fetch(
+        `${process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001'}/api/users/${userId}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!res.ok) throw new Error('Erreur suppression');
+
+      await signOut({ callbackUrl: '/' });
+    } catch {
+      setDeleting(false);
+      setConfirm(false);
+    }
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <h1 className="font-display text-2xl font-bold text-gray-900">Mon Profil</h1>
+    <PageContainer size="narrow">
+      <PageHeader title="Mon profil" />
 
-      <div className="bg-white rounded-2xl border border-surface-200 p-6 shadow-sm flex items-center gap-4">
-        <div className="h-14 w-14 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
-          <User className="h-7 w-7 text-primary-600" />
+      <Section title="Informations">
+        <div
+          className="p-6 space-y-3"
+          style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '8px' }}
+        >
+          <InfoRow label="Email" value={session?.user?.email ?? '—'} />
+          <InfoRow label="Nom"   value={session?.user?.name  ?? '—'} />
         </div>
-        <div>
-          <p className="font-semibold text-gray-900">{session.user.name ?? session.user.email}</p>
-          <p className="text-xs text-gray-400 mt-0.5">{roleLabels[session.user.role ?? 'student'] ?? 'Élève'}</p>
-        </div>
-      </div>
+      </Section>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl border border-surface-200 p-5 shadow-sm flex items-center gap-3">
-          <Trophy className="h-6 w-6 text-warning-500" />
-          <div>
-            <p className="text-xs text-gray-400">XP Total</p>
-            <p className="font-display font-bold text-gray-900">{session.user.xp ?? 0}</p>
-          </div>
+      <Section title="Mes données — Droits RGPD">
+        <div
+          className="p-6 space-y-4"
+          style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '8px' }}
+        >
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--color-body)' }}>
+            Conformément au RGPD, tu as le droit d&apos;accéder à tes données, de les corriger et de les supprimer.
+            La CNIL supervise l&apos;application de ces droits en France.
+          </p>
+          <a
+            href={`${process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001'}/api/users/me/data`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block px-4 py-2 text-sm font-medium transition-colors duration-200"
+            style={{
+              background:   'var(--color-bg)',
+              border:       '1px solid var(--color-border)',
+              borderRadius: '8px',
+              color:        'var(--color-body)',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-border-strong)')}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}
+          >
+            Télécharger mes données
+          </a>
         </div>
-        <div className="bg-white rounded-2xl border border-surface-200 p-5 shadow-sm flex items-center gap-3">
-          <Flame className="h-6 w-6 text-danger-500" />
-          <div>
-            <p className="text-xs text-gray-400">Série</p>
-            <p className="font-display font-bold text-gray-900">{session.user.streakDays ?? 0} jours</p>
-          </div>
-        </div>
-      </div>
+      </Section>
 
-      <LevelCard level={session.user.level ?? 1} currentXP={session.user.xp ?? 0} />
-      <StreakBadge days={session.user.streakDays ?? 0} />
+      <Section title="Zone dangereuse">
+        <div
+          className="p-6 space-y-4"
+          style={{ background: 'var(--color-error-soft)', border: '1px solid rgba(185,28,28,0.2)', borderRadius: '8px' }}
+        >
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--color-body)' }}>
+            La suppression de ton compte est définitive. Toutes tes données seront effacées
+            (progression, tentatives, cours générés).
+          </p>
+
+          {confirm && (
+            <p
+              className="text-sm px-4 py-3"
+              style={{
+                color:        'var(--color-error)',
+                background:   'var(--color-surface)',
+                border:       '1px solid rgba(185,28,28,0.3)',
+                borderRadius: '8px',
+              }}
+            >
+              Cette action est irréversible. Clique à nouveau pour confirmer.
+            </p>
+          )}
+
+          <button
+            onClick={() => { void handleDelete(); }}
+            disabled={deleting}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors duration-200"
+            style={{
+              background:   'rgba(185,28,28,0.08)',
+              border:       '1px solid rgba(185,28,28,0.3)',
+              borderRadius: '8px',
+              color:        'var(--color-error)',
+              cursor:       deleting ? 'not-allowed' : 'pointer',
+            }}
+            onMouseEnter={e => { if (!deleting) e.currentTarget.style.background = 'rgba(185,28,28,0.15)'; }}
+            onMouseLeave={e => { if (!deleting) e.currentTarget.style.background = 'rgba(185,28,28,0.08)'; }}
+          >
+            <Trash2 size={15} aria-hidden="true" />
+            {deleting ? 'Suppression…' : confirm ? 'Confirmer la suppression' : 'Supprimer mon compte'}
+          </button>
+        </div>
+      </Section>
+    </PageContainer>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between py-2 border-b last:border-0" style={{ borderColor: 'var(--color-border)' }}>
+      <span className="text-sm" style={{ color: 'var(--color-muted)' }}>{label}</span>
+      <span className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>{value}</span>
     </div>
   );
 }

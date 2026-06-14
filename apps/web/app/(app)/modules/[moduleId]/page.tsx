@@ -12,7 +12,7 @@ export default async function ModulePage({ params }: { params: Promise<{ moduleI
 
   let courses: CourseEntity[] = [];
   try {
-    courses = await apiClient.get<CourseEntity[]>(`/courses?moduleId=${moduleId}`);
+    courses = await apiClient.get<CourseEntity[]>(`/courses/module/${moduleId}`);
   } catch {
     courses = [];
   }
@@ -20,17 +20,36 @@ export default async function ModulePage({ params }: { params: Promise<{ moduleI
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <nav className="text-xs text-gray-400 mb-2">
-          <Link href="/dashboard" className="hover:text-primary-600">Accueil</Link>
+        <nav className="text-xs mb-2" style={{ color: 'var(--color-muted)' }}>
+          <Link
+            href="/dashboard"
+            className="transition-colors duration-150"
+            style={{ color: 'var(--color-muted)' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-accent)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-muted)')}
+          >
+            Accueil
+          </Link>
           <span className="mx-1">/</span>
-          <span className="text-gray-600">{moduleConfig.label}</span>
+          <span style={{ color: 'var(--color-body)' }}>{moduleConfig.label}</span>
         </nav>
-        <h1 className="font-display text-2xl font-bold text-gray-900">{moduleConfig.label}</h1>
-        <p className="text-gray-500 mt-1 text-sm">{courses.length} cours disponibles</p>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-ink)' }}>
+          {moduleConfig.label}
+        </h1>
+        <p className="mt-1 text-sm" style={{ color: 'var(--color-muted)' }}>
+          {courses.length} cours disponibles
+        </p>
       </div>
 
       {courses.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-surface-200 p-10 text-center text-gray-400">
+        <div
+          className="p-10 text-center text-sm"
+          style={{
+            border:       '1px dashed var(--color-border-strong)',
+            borderRadius: '8px',
+            color:        'var(--color-muted)',
+          }}
+        >
           Aucun cours disponible pour ce module pour l&apos;instant.
         </div>
       ) : (

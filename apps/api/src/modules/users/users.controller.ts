@@ -27,7 +27,7 @@ export class UsersController {
   /** CNIL: suppression cascade (droit à l'effacement RGPD) */
   @Delete(':id')
   @Roles('admin')
-  deleteUser(@Param('id') id: string) {
-    return this.usersService.deleteWithCascade(id);
+  deleteUser(@Param('id') id: string, @Request() req: JwtRequest) {
+    return this.usersService.deleteWithCascade(id, req.user.id);
   }
 }

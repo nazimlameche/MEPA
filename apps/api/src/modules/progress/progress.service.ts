@@ -1,59 +1,97 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
-import { UserEntity } from '../users/entities/user.entity';
-import { XP_REWARDS, LEVEL_THRESHOLDS } from '@ai-edu/shared';
+import { Repository } from 'typeorm';
+import { UserProgress } from './user-progress.entity';
+import { UserStats } from './user-stats.entity';
 
-export type ProgressStatus = 'in_progress' | 'completed';
+const XP_PER_LEVEL = 500;
 
-export interface UserProgressRow {
-  id: string;
-  userId: string;
-  courseId: string;
-  status: ProgressStatus;
-  score: number;
-  xpEarned: number;
-  updatedAt: Date;
+function calculateLevel(totalXp: number): number {
+  return Math.floor(totalXp / XP_PER_LEVEL) + 1;
+}
+
+function getTodayDate(): string {
+  return new Date().toISOString().split('T')[0]!;
 }
 
 @Injectable()
 export class ProgressService {
   constructor(
-    @InjectRepository(UserEntity)
-    private readonly usersRepo: Repository<UserEntity>,
-    private readonly dataSource: DataSource,
+    @InjectRepository(UserProgress)
+    private readonly progressRepo: Repository<UserProgress>,
+    @InjectRepository(UserStats)
+    private readonly statsRepo: Repository<UserStats>,
   ) {}
 
-  async upsertProgress(userId: string, courseId: string, status: ProgressStatus): Promise<UserProgressRow> {
-    const result = await this.dataSource.query<UserProgressRow[]>(
-      `INSERT INTO user_progress (user_id, course_id, status, xp_earned, updated_at)
-       VALUES ($1, $2, $3, $4, NOW())
-       ON CONFLICT (user_id, course_id)
-       DO UPDATE SET status = EXCLUDED.status, updated_at = NOW()
-       RETURNING *`,
-      [userId, courseId, status, status === 'completed' ? XP_REWARDS.COURSE_COMPLETE : 0],
-    );
-
-    if (status === 'completed') {
-      await this.usersRepo.increment({ id: userId }, 'xp', XP_REWARDS.COURSE_COMPLETE);
-      await this.recalculateLevel(userId);
+  async getStats(userId: string): Promise<UserStats> {
+    let stats = await this.statsRepo.findOneBy({ userId });
+    if (!stats) {
+      stats = this.statsRepo.create({ userId });
+      await this.statsRepo.save(stats);
     }
-
-    return result[0];
+    return stats;
   }
 
-  private async recalculateLevel(userId: string): Promise<void> {
-    const user = await this.usersRepo.findOne({ where: { id: userId } });
-    if (!user) return;
+  getUserProgress(userId: string): Promise<UserProgress[]> {
+    return this.progressRepo.findBy({ userId });
+  }
 
-    let level = 1;
-    for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
-      if (user.xp >= (LEVEL_THRESHOLDS[i] ?? 0)) {
-        level = i + 1;
-        break;
-      }
+  getCourseProgress(userId: string, courseId: string): Promise<UserProgress | null> {
+    return this.progressRepo.findOneBy({ userId, courseId });
+  }
+
+  async startCourse(userId: string, courseId: string): Promise<UserProgress> {
+    const existing = await this.getCourseProgress(userId, courseId);
+    if (existing) return existing;
+
+    const progress = this.progressRepo.create({ userId, courseId, status: 'in_progress' });
+    return this.progressRepo.save(progress);
+  }
+
+  async completeCourse(
+    userId: string,
+    courseId: string,
+    xpReward: number,
+    score: number,
+  ): Promise<{ progress: UserProgress; stats: UserStats; levelUp: boolean }> {
+    let progress = await this.getCourseProgress(userId, courseId);
+    if (!progress) {
+      progress = this.progressRepo.create({ userId, courseId });
     }
 
-    await this.usersRepo.update(userId, { level });
+    const alreadyCompleted = progress.status === 'completed';
+
+    progress.status      = 'completed';
+    progress.score       = score;
+    progress.xpEarned    = alreadyCompleted ? progress.xpEarned : xpReward;
+    progress.completedAt = progress.completedAt ?? new Date();
+    await this.progressRepo.save(progress);
+
+    const stats       = await this.getStats(userId);
+    const levelBefore = stats.level;
+
+    if (!alreadyCompleted) {
+      stats.totalXp          += xpReward;
+      stats.completedCourses += 1;
+      stats.level             = calculateLevel(stats.totalXp);
+    }
+
+    // Streak update
+    const today     = getTodayDate();
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]!;
+
+    if (stats.lastActivityDate === today) {
+      // already active today — no change
+    } else if (stats.lastActivityDate === yesterday) {
+      stats.currentStreak  += 1;
+      stats.longestStreak   = Math.max(stats.longestStreak, stats.currentStreak);
+    } else {
+      stats.currentStreak   = 1;
+    }
+    stats.lastActivityDate = today;
+
+    await this.statsRepo.save(stats);
+
+    return { progress, stats, levelUp: stats.level > levelBefore };
   }
 }

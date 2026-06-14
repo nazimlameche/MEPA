@@ -1,43 +1,40 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
+  Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index,
 } from 'typeorm';
 
-export type CourseLevel = 'beginner' | 'intermediate' | 'advanced';
-export type CourseTier = 'free' | 'premium';
-
 @Entity('courses')
-export class CourseEntity {
+export class Course {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Index()
+  @Column({ type: 'varchar', length: 50 })
   moduleId!: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 255 })
   title!: string;
 
-  @Column({ type: 'varchar' })
-  level!: CourseLevel;
+  @Column({ type: 'text', nullable: true })
+  description!: string | null;
 
-  @Column({ type: 'varchar', default: 'free' })
-  tier!: CourseTier;
+  @Column({ type: 'smallint' })
+  level!: number;
+
+  @Column({ type: 'smallint' })
+  tier!: number;
 
   @Column({ type: 'jsonb', default: '[]' })
   contentBlocks!: unknown[];
 
-  @Column({ default: 50 })
+  @Column({ type: 'smallint', default: 10 })
   xpReward!: number;
 
-  @Column({ default: true })
-  isActive!: boolean;
+  @Column({ type: 'smallint', default: 5 })
+  estimatedMinutes!: number;
 
-  @CreateDateColumn()
+  @Column({ type: 'boolean', default: false })
+  isPublished!: boolean;
+
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
-
-  @UpdateDateColumn()
-  updatedAt!: Date;
 }

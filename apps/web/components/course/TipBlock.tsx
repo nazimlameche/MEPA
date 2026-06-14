@@ -3,14 +3,15 @@ import type { TipBlock } from '@/lib/types/course';
 export default function TipBlockComponent({ block }: { block: TipBlock }) {
   return (
     <div
-      className="rounded-2xl px-5 py-4 flex gap-3 items-start"
+      className="px-5 py-4 flex gap-3 items-start"
       style={{
-        background: 'rgba(245,158,11,0.07)',
-        border: '1px solid rgba(245,158,11,0.2)',
+        background:  'var(--color-surface)',
+        border:      '1px solid var(--color-border)',
+        borderLeft:  '2px solid var(--color-accent)',
+        borderRadius: '8px',
       }}
     >
-      <span className="text-lg flex-shrink-0 mt-0.5">💡</span>
-      <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+      <p className="text-sm leading-relaxed" style={{ color: 'var(--color-body)' }}>
         {block.content}
       </p>
     </div>

@@ -24,22 +24,21 @@ export default function AppNavbar() {
       <header
         className="md:hidden sticky top-0 z-40 flex items-center justify-between px-4 h-14"
         style={{
-          background: 'rgba(22,19,43,0.9)',
-          backdropFilter: 'blur(12px)',
-          borderBottom: '1px solid var(--color-surface-border)',
+          background:   'var(--color-surface)',
+          borderBottom: '1px solid var(--color-border)',
         }}
       >
         <Link
           href="/dashboard"
           className="text-lg font-semibold"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--color-primary-light)' }}
+          style={{ fontFamily: 'var(--font-display)', color: 'var(--color-accent)' }}
         >
           AI·Edu
         </Link>
         <button
           onClick={() => setOpen(v => !v)}
           aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'}
-          style={{ color: 'var(--color-text-secondary)' }}
+          style={{ color: 'var(--color-muted)' }}
         >
           {open ? <X size={22} /> : <Menu size={22} />}
         </button>
@@ -51,7 +50,7 @@ export default function AppNavbar() {
           <>
             <motion.div
               className="md:hidden fixed inset-0 z-30"
-              style={{ background: 'rgba(0,0,0,0.5)' }}
+              style={{ background: 'rgba(28,25,23,0.25)' }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -60,15 +59,15 @@ export default function AppNavbar() {
             <motion.div
               className="md:hidden fixed top-14 left-0 bottom-0 z-40 w-64 flex flex-col py-4 px-3"
               style={{
-                background: 'var(--color-surface-card)',
-                borderRight: '1px solid var(--color-surface-border)',
+                background:  'var(--color-surface)',
+                borderRight: '1px solid var(--color-border)',
               }}
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             >
-              <nav className="flex flex-col gap-1 flex-1">
+              <nav className="flex flex-col gap-0.5 flex-1">
                 {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
                   const active = pathname === href || pathname.startsWith(href + '/');
                   return (
@@ -76,34 +75,40 @@ export default function AppNavbar() {
                       key={href}
                       href={href}
                       onClick={() => setOpen(false)}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium"
+                      className="relative flex items-center gap-3 px-3 py-2.5 text-sm font-medium"
                       style={{
-                        background: active ? 'rgba(76,31,212,0.18)' : 'transparent',
-                        color: active ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                        color:        active ? 'var(--color-accent)' : 'var(--color-muted)',
+                        borderRadius: '8px',
                       }}
                     >
-                      <Icon size={18} aria-hidden="true" />
+                      {active && (
+                        <span
+                          className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5"
+                          style={{ background: 'var(--color-accent)', borderRadius: '0 2px 2px 0' }}
+                        />
+                      )}
+                      <Icon size={17} aria-hidden="true" />
                       {label}
                     </Link>
                   );
                 })}
               </nav>
-              <div className="flex flex-col gap-1 pt-4" style={{ borderTop: '1px solid var(--color-surface-border)' }}>
+              <div className="flex flex-col gap-0.5 pt-4" style={{ borderTop: '1px solid var(--color-border)' }}>
                 <Link
                   href="/profile"
                   onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium"
-                  style={{ color: 'var(--color-text-secondary)' }}
+                  className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium"
+                  style={{ color: 'var(--color-muted)', borderRadius: '8px' }}
                 >
-                  <User size={18} aria-hidden="true" />
+                  <User size={17} aria-hidden="true" />
                   Mon profil
                 </Link>
                 <button
                   onClick={() => signOut({ callbackUrl: '/' })}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium w-full text-left"
-                  style={{ color: 'var(--color-text-muted)' }}
+                  className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium w-full text-left"
+                  style={{ color: 'var(--color-muted)', borderRadius: '8px' }}
                 >
-                  <LogOut size={18} aria-hidden="true" />
+                  <LogOut size={17} aria-hidden="true" />
                   Déconnexion
                 </button>
               </div>

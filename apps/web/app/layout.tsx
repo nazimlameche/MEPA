@@ -1,15 +1,15 @@
 import type { Metadata } from 'next';
-import { Bricolage_Grotesque, DM_Sans, JetBrains_Mono } from 'next/font/google';
+import { Fraunces, Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
-const bricolage = Bricolage_Grotesque({
+const fraunces = Fraunces({
   subsets: ['latin'],
-  weight: ['400', '600', '800'],
+  weight: ['400', '500', '600'],
   variable: '--font-display',
   display: 'swap',
 });
 
-const dmSans = DM_Sans({
+const inter = Inter({
   subsets: ['latin'],
   weight: ['400', '500', '600'],
   variable: '--font-body',
@@ -25,14 +25,14 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "AI-Edu — Apprends à utiliser l'IA",
-  description: "Plateforme gamifiée pour comprendre l'IA et ses risques. Développée en collaboration avec la CNIL.",
+  description: "Plateforme d'apprentissage pour comprendre l'intelligence artificielle et ses risques. Développée en collaboration avec la CNIL.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="fr"
-      className={`${bricolage.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}
+      className={`${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body>{children}</body>
     </html>

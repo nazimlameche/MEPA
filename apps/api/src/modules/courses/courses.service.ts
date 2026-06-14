@@ -1,27 +1,25 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CourseEntity } from './entities/course.entity';
+import { Course } from './entities/course.entity';
 
 @Injectable()
 export class CoursesService {
   constructor(
-    @InjectRepository(CourseEntity)
-    private readonly coursesRepo: Repository<CourseEntity>,
+    @InjectRepository(Course)
+    private readonly repo: Repository<Course>,
   ) {}
 
-  findAll(filters: { moduleId?: string; level?: string }): Promise<CourseEntity[]> {
-    const qb = this.coursesRepo.createQueryBuilder('course').where('course.isActive = :active', { active: true });
-
-    if (filters.moduleId) qb.andWhere('course.moduleId = :moduleId', { moduleId: filters.moduleId });
-    if (filters.level) qb.andWhere('course.level = :level', { level: filters.level });
-
-    return qb.orderBy('course.createdAt', 'ASC').getMany();
+  findByModule(moduleId: string): Promise<Course[]> {
+    return this.repo.find({
+      where: { moduleId, isPublished: true },
+      order: { level: 'ASC', tier: 'ASC' },
+    });
   }
 
-  async findById(id: string): Promise<CourseEntity> {
-    const course = await this.coursesRepo.findOne({ where: { id } });
-    if (!course) throw new NotFoundException('Cours introuvable');
+  async findById(id: string): Promise<Course> {
+    const course = await this.repo.findOneBy({ id });
+    if (!course) throw new NotFoundException('Cours introuvable.');
     return course;
   }
 }

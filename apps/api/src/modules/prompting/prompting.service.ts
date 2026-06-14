@@ -1,26 +1,69 @@
-import { Inject, Injectable } from '@nestjs/common';
-import type { AIProvider, AIResponse } from '@ai-edu/shared';
-import { AI_PROVIDER } from '../../shared/ai/ai-provider.token';
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { QuizAttempt } from './quiz-attempt.entity';
+import { ProgressService } from '../progress/progress.service';
 
-const SYSTEM_PROMPT = `Tu es un évaluateur pédagogique de prompts pour des élèves apprenant le prompt engineering.
-Compare le prompt de l'élève au résultat attendu, puis renvoie un retour structuré :
-1. Une note sur 10 (clarté, précision, contexte fourni).
-2. Trois points concrets à améliorer.
-3. Une version améliorée du prompt.
-Ne juge pas l'élève — sois encourageant et bienveillant.`;
+export interface SaveAttemptDto {
+  userId:      string;
+  exerciseId:  string;
+  userPrompt:  string;
+  totalScore:  number;
+  passed:      boolean;
+  scoreDetail: unknown;
+}
+
+const XP_PERFECT_SCORE = 25;
+const XP_PARTIAL_SCORE = 10;
 
 @Injectable()
 export class PromptingService {
   constructor(
-    @Inject(AI_PROVIDER) private readonly aiProvider: AIProvider,
+    @InjectRepository(QuizAttempt)
+    private readonly repo: Repository<QuizAttempt>,
+    private readonly progressService: ProgressService,
   ) {}
 
-  // CNIL: aucune PII ne doit transiter dans userPrompt ni expectedOutput
-  evaluatePrompt(userPrompt: string, expectedOutput: string): Promise<AIResponse> {
-    const message = `Prompt de l'élève :\n${userPrompt}\n\nRésultat attendu :\n${expectedOutput}`;
-    return this.aiProvider.chat(
-      [{ role: 'user', content: message }],
-      { systemPrompt: SYSTEM_PROMPT, temperature: 0.3 },
-    );
+  async saveAttempt(dto: SaveAttemptDto): Promise<{ attempt: QuizAttempt; xpEarned: number }> {
+    const xpEarned = dto.passed ? XP_PERFECT_SCORE : XP_PARTIAL_SCORE;
+
+    // CNIL: le prompt est stocké sans données identifiantes (userId est un UUID opaque)
+    const attempt = this.repo.create({
+      userId:      dto.userId,
+      exerciseId:  dto.exerciseId,
+      userPrompt:  dto.userPrompt,
+      totalScore:  dto.totalScore,
+      passed:      dto.passed,
+      xpEarned,
+      scoreDetail: dto.scoreDetail,
+    });
+    await this.repo.save(attempt);
+
+    if (dto.passed) {
+      await this.progressService.completeCourse(
+        dto.userId,
+        `prompting-${dto.exerciseId}`,
+        xpEarned,
+        dto.totalScore,
+      );
+    }
+
+    return { attempt, xpEarned };
+  }
+
+  getAttemptsByUser(userId: string): Promise<QuizAttempt[]> {
+    return this.repo.find({
+      where: { userId },
+      order: { attemptedAt: 'DESC' },
+      take:  20,
+    });
+  }
+
+  async getBestScore(userId: string, exerciseId: string): Promise<number | null> {
+    const best = await this.repo.findOne({
+      where: { userId, exerciseId },
+      order: { totalScore: 'DESC' },
+    });
+    return best?.totalScore ?? null;
   }
 }

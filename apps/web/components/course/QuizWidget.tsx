@@ -10,56 +10,78 @@ interface QuizWidgetProps {
 }
 
 export default function QuizWidget({ block, courseId: _courseId }: QuizWidgetProps) {
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected]   = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
-  const options = block.options ?? [];
-  const correct = block.correctIndex ?? 0;
+  const options   = block.options ?? [];
+  const correct   = block.correctIndex ?? 0;
   const isCorrect = selected === correct;
 
+  function optionStyle(i: number): React.CSSProperties {
+    if (!submitted) {
+      return selected === i
+        ? { background: 'var(--color-accent-soft)', border: '1px solid var(--color-accent)', color: 'var(--color-accent)', borderRadius: '8px' }
+        : { background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-body)', borderRadius: '8px' };
+    }
+    if (i === correct)  return { background: 'var(--color-complete-soft)', border: '1px solid var(--color-complete)', color: 'var(--color-complete)', borderRadius: '8px' };
+    if (i === selected) return { background: 'var(--color-error-soft)', border: '1px solid var(--color-error)', color: 'var(--color-error)', borderRadius: '8px' };
+    return { background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-muted)', borderRadius: '8px', opacity: 0.5 };
+  }
+
   return (
-    <div className="rounded-2xl border border-surface-200 bg-white p-5 shadow-sm space-y-4">
-      <div className="flex items-start gap-2">
-        <span className="text-lg">❓</span>
-        <p className="font-semibold text-gray-900">{block.content}</p>
-      </div>
+    <div
+      className="p-5 space-y-4"
+      style={{
+        background:   'var(--color-surface)',
+        border:       '1px solid var(--color-border)',
+        borderRadius: '8px',
+      }}
+    >
+      <p className="font-semibold" style={{ color: 'var(--color-ink)' }}>
+        {block.content}
+      </p>
 
       <div className="space-y-2">
-        {options.map((opt, i) => {
-          let cls = 'rounded-xl border px-4 py-2.5 text-sm text-left w-full transition-all ';
-          if (!submitted) {
-            cls += selected === i
-              ? 'border-primary-500 bg-primary-50 text-primary-700'
-              : 'border-surface-200 hover:border-primary-300';
-          } else if (i === correct) {
-            cls += 'border-success-500 bg-success-50 text-success-600';
-          } else if (i === selected) {
-            cls += 'border-danger-500 bg-danger-50 text-danger-500';
-          } else {
-            cls += 'border-surface-200 opacity-50';
-          }
-
-          return (
-            <button key={i} className={cls} onClick={() => !submitted && setSelected(i)} disabled={submitted}>
-              {opt}
-            </button>
-          );
-        })}
+        {options.map((opt, i) => (
+          <button
+            key={i}
+            className="px-4 py-2.5 text-sm text-left w-full transition-colors duration-150"
+            style={optionStyle(i)}
+            onClick={() => !submitted && setSelected(i)}
+            disabled={submitted}
+            onMouseEnter={e => {
+              if (!submitted && selected !== i)
+                e.currentTarget.style.borderColor = 'var(--color-accent)';
+            }}
+            onMouseLeave={e => {
+              if (!submitted && selected !== i)
+                e.currentTarget.style.borderColor = 'var(--color-border)';
+            }}
+          >
+            {opt}
+          </button>
+        ))}
       </div>
 
       {!submitted && selected !== null && (
         <button
           onClick={() => setSubmitted(true)}
-          className="rounded-xl bg-primary-500 text-white text-sm font-semibold px-5 py-2 hover:bg-primary-600 transition"
+          className="px-5 py-2 text-sm font-semibold transition-colors duration-150"
+          style={{ background: 'var(--color-accent)', color: '#fff', borderRadius: '8px', border: 'none' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-accent-hover)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'var(--color-accent)')}
         >
           Valider
         </button>
       )}
 
       {submitted && (
-        <div className={`flex items-center gap-2 text-sm font-medium ${isCorrect ? 'text-success-600' : 'text-danger-500'}`}>
-          {isCorrect ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-          {isCorrect ? 'Bonne réponse ! +10 XP' : `Incorrect. ${block.explanation ?? ''}`}
+        <div className="flex items-center gap-2 text-sm font-medium" style={{ color: isCorrect ? 'var(--color-complete)' : 'var(--color-error)' }}>
+          {isCorrect
+            ? <CheckCircle className="h-4 w-4" aria-hidden="true" />
+            : <XCircle className="h-4 w-4" aria-hidden="true" />
+          }
+          {isCorrect ? 'Correct. +10 XP' : `Pas tout à fait. ${block.explanation ?? ''}`}
         </div>
       )}
     </div>

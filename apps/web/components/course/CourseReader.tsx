@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowLeft, Zap } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import type { Course } from '@/lib/types/course';
 import BlockRenderer from './BlockRenderer';
 
@@ -14,10 +15,11 @@ interface CourseReaderProps {
 const INTERACTIVE_TYPES = new Set(['quiz', 'fill_blank']);
 
 export default function CourseReader({ course }: CourseReaderProps) {
-  const [currentBlock, setCurrentBlock] = useState(0);
-  const [unlockedUpTo, setUnlockedUpTo] = useState(0);
-  const [completed, setCompleted]       = useState(false);
-  const [score, setScore]               = useState({ correct: 0, total: 0 });
+  const { data: session }                     = useSession();
+  const [currentBlock, setCurrentBlock]       = useState(0);
+  const [unlockedUpTo, setUnlockedUpTo]       = useState(0);
+  const [completed, setCompleted]             = useState(false);
+  const [score, setScore]                     = useState({ correct: 0, total: 0 });
 
   const block         = course.blocks[currentBlock];
   const isLast        = currentBlock === course.blocks.length - 1;
@@ -25,67 +27,80 @@ export default function CourseReader({ course }: CourseReaderProps) {
   const canContinue   = !isInteractive || unlockedUpTo >= currentBlock;
 
   const handleValidate = (correct: boolean) => {
-    setScore(s => ({
-      correct: s.correct + (correct ? 1 : 0),
-      total: s.total + 1,
-    }));
+    setScore(s => ({ correct: s.correct + (correct ? 1 : 0), total: s.total + 1 }));
     setUnlockedUpTo(currentBlock);
   };
 
-  const goNext = () => {
+  const goNext = async () => {
     if (isLast) {
+      const token = session?.accessToken;
+      if (token) {
+        try {
+          await fetch(
+            `${process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001'}/api/progress/courses/${course.id}/complete`,
+            {
+              method:  'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body:    JSON.stringify({
+                xpReward: course.xpReward,
+                score:    score.total > 0 ? Math.round((score.correct / score.total) * 100) : 100,
+              }),
+            },
+          );
+        } catch {
+          // Silencieux — la complétion locale fonctionne même sans persistance
+        }
+      }
       setCompleted(true);
     } else {
       const next = currentBlock + 1;
       setCurrentBlock(next);
-      if (!INTERACTIVE_TYPES.has(course.blocks[next].type)) {
-        setUnlockedUpTo(next);
-      }
+      if (!INTERACTIVE_TYPES.has(course.blocks[next].type)) setUnlockedUpTo(next);
     }
   };
 
   if (completed) {
     return (
-      <div className="max-w-2xl mx-auto flex flex-col items-center text-center gap-6 py-16 px-4">
-        <div
-          className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl"
-          style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)' }}
-        >
-          🎉
-        </div>
+      <div className="flex flex-col items-center text-center gap-6 py-16 max-w-sm mx-auto">
         <div>
           <h1
             style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '1.75rem',
-              fontWeight: 700,
-              color: 'var(--color-text-primary)',
+              fontSize:     '1.6rem',
+              fontWeight:   600,
               marginBottom: '8px',
             }}
           >
-            Cours terminé !
+            Leçon terminée
           </h1>
-          <p style={{ color: 'var(--color-text-secondary)' }}>
+          <p style={{ color: 'var(--color-body)' }}>
             {score.total > 0
-              ? `Tu as répondu correctement à ${score.correct} question${score.correct > 1 ? 's' : ''} sur ${score.total}.`
+              ? `${score.correct} bonne${score.correct > 1 ? 's' : ''} réponse${score.correct > 1 ? 's' : ''} sur ${score.total}.`
               : 'Tu as lu tout le cours.'}
           </p>
         </div>
         <div
-          className="flex items-center gap-2 px-5 py-3 rounded-xl"
-          style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}
+          className="flex items-center gap-2 px-5 py-3"
+          style={{
+            background:   'var(--color-complete-soft)',
+            border:       '1px solid rgba(77,124,15,0.25)',
+            borderRadius: '8px',
+          }}
         >
-          <Zap size={18} style={{ color: 'var(--color-xp)' }} aria-hidden="true" />
-          <span className="font-semibold" style={{ color: '#10B981' }}>
-            +{course.xpReward} XP gagnés
+          <Zap size={16} style={{ color: 'var(--color-complete)' }} aria-hidden="true" />
+          <span className="font-semibold" style={{ color: 'var(--color-complete)' }}>
+            +{course.xpReward} XP
           </span>
         </div>
         <Link
           href="/modules/theory"
-          className="px-8 py-3 rounded-xl font-semibold text-sm transition-colors duration-200"
-          style={{ background: 'var(--color-primary)', color: '#fff' }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-primary-light)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'var(--color-primary)')}
+          className="px-8 py-3 font-semibold text-sm transition-colors duration-150"
+          style={{
+            background:   'var(--color-accent)',
+            color:        '#fff',
+            borderRadius: '8px',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-accent-hover)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'var(--color-accent)')}
         >
           Retour au parcours
         </Link>
@@ -94,47 +109,43 @@ export default function CourseReader({ course }: CourseReaderProps) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 px-4">
+    <div className="space-y-6">
 
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link
           href="/modules/theory"
           className="flex items-center gap-1.5 text-sm transition-colors duration-200"
-          style={{ color: 'var(--color-text-muted)' }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-text-secondary)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-text-muted)')}
+          style={{ color: 'var(--color-muted)' }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-body)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-muted)')}
         >
           <ArrowLeft size={15} aria-hidden="true" />
           Parcours
         </Link>
         <div className="flex-1" />
-        <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+        <span className="text-sm" style={{ color: 'var(--color-muted)' }}>
           {currentBlock + 1} / {course.blocks.length}
         </span>
       </div>
 
-      {/* Titre + barre blocs */}
+      {/* Titre + barre de blocs */}
       <div>
-        <h1
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 'clamp(1.3rem, 3vw, 1.7rem)',
-            fontWeight: 700,
-            color: 'var(--color-text-primary)',
-          }}
-        >
+        <h1 style={{ fontSize: 'clamp(1.3rem, 3vw, 1.7rem)', fontWeight: 600 }}>
           {course.title}
         </h1>
         <div className="flex gap-1 mt-4">
           {course.blocks.map((_, i) => (
             <div
               key={i}
-              className="flex-1 h-1 rounded-full transition-colors duration-300"
+              className="flex-1 h-1 transition-colors duration-300"
               style={{
-                background: i <= currentBlock
-                  ? 'var(--color-primary-light)'
-                  : 'rgba(255,255,255,0.08)',
+                background:   i < currentBlock
+                  ? 'var(--color-complete)'
+                  : i === currentBlock
+                  ? 'var(--color-accent)'
+                  : 'var(--color-border)',
+                borderRadius: '2px',
               }}
             />
           ))}
@@ -145,10 +156,10 @@ export default function CourseReader({ course }: CourseReaderProps) {
       <AnimatePresence mode="wait">
         <motion.div
           key={currentBlock}
-          initial={{ opacity: 0, x: 20 }}
+          initial={{ opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.25, ease: 'easeOut' }}
+          exit={{ opacity: 0, x: -16 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
         >
           <BlockRenderer block={block} onValidate={handleValidate} />
         </motion.div>
@@ -157,18 +168,20 @@ export default function CourseReader({ course }: CourseReaderProps) {
       {/* Bouton Continuer */}
       <div className="flex justify-end pb-8">
         <button
-          onClick={goNext}
+          onClick={() => { void goNext(); }}
           disabled={!canContinue}
-          className="px-7 py-3 rounded-xl font-semibold text-sm transition-colors duration-200"
+          className="px-7 py-3 font-semibold text-sm transition-colors duration-150"
           style={{
-            background: canContinue ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)',
-            color: canContinue ? '#fff' : 'var(--color-text-muted)',
-            cursor: canContinue ? 'pointer' : 'not-allowed',
+            background:   canContinue ? 'var(--color-accent)' : 'var(--color-bg)',
+            color:        canContinue ? '#fff' : 'var(--color-muted)',
+            cursor:       canContinue ? 'pointer' : 'not-allowed',
+            border:       `1px solid ${canContinue ? 'var(--color-accent)' : 'var(--color-border)'}`,
+            borderRadius: '8px',
           }}
-          onMouseEnter={e => { if (canContinue) e.currentTarget.style.background = 'var(--color-primary-light)'; }}
-          onMouseLeave={e => { if (canContinue) e.currentTarget.style.background = 'var(--color-primary)'; }}
+          onMouseEnter={e => { if (canContinue) e.currentTarget.style.background = 'var(--color-accent-hover)'; }}
+          onMouseLeave={e => { if (canContinue) e.currentTarget.style.background = 'var(--color-accent)'; }}
         >
-          {isLast ? 'Terminer le cours 🎉' : 'Continuer →'}
+          {isLast ? 'Terminer la leçon' : 'Continuer'}
         </button>
       </div>
     </div>

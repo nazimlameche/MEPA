@@ -1,4 +1,4 @@
-const BASE_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001';
+const BASE_URL = `${process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001'}/api`;
 
 interface FetchOptions extends RequestInit {
   token?: string;
@@ -16,7 +16,7 @@ async function request<T>(path: string, options: FetchOptions = {}): Promise<T> 
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${BASE_URL}/api${path}`, { ...rest, headers });
+  const res = await fetch(`${BASE_URL}${path}`, { ...rest, headers });
 
   if (!res.ok) {
     const error = (await res.json().catch(() => ({ message: 'Erreur inconnue' }))) as { message?: string };

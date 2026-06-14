@@ -20,90 +20,95 @@ export default function AppSidebar() {
     <aside
       className="hidden md:flex flex-col w-60 h-screen sticky top-0 flex-shrink-0 py-6 px-4"
       style={{
-        background: 'var(--color-surface-card)',
-        borderRight: '1px solid var(--color-surface-border)',
+        background:  'var(--color-surface)',
+        borderRight: '1px solid var(--color-border)',
       }}
     >
       {/* Logo */}
       <Link
         href="/dashboard"
         className="text-xl font-semibold px-3 mb-8 block"
-        style={{ fontFamily: 'var(--font-display)', color: 'var(--color-primary-light)' }}
+        style={{ fontFamily: 'var(--font-display)', color: 'var(--color-accent)' }}
       >
         AI·Edu
       </Link>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-1 flex-1">
+      <nav className="flex flex-col gap-0.5 flex-1">
         {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
           const active = pathname === href || pathname.startsWith(href + '/');
           return (
             <Link
               key={href}
               href={href}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150"
+              className="relative flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors duration-150"
               style={{
-                background: active ? 'rgba(76,31,212,0.18)' : 'transparent',
-                color: active ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                background:   active ? 'transparent' : 'transparent',
+                color:        active ? 'var(--color-accent)' : 'var(--color-muted)',
+                borderRadius: '8px',
               }}
               onMouseEnter={e => {
-                if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                if (!active) e.currentTarget.style.color = 'var(--color-text-primary)';
+                if (!active) {
+                  e.currentTarget.style.background = 'var(--color-bg)';
+                  e.currentTarget.style.color      = 'var(--color-body)';
+                }
               }}
               onMouseLeave={e => {
-                if (!active) e.currentTarget.style.background = 'transparent';
-                if (!active) e.currentTarget.style.color = 'var(--color-text-secondary)';
+                if (!active) {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color      = 'var(--color-muted)';
+                }
               }}
             >
+              {active && (
+                <span
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5"
+                  style={{ background: 'var(--color-accent)', borderRadius: '0 2px 2px 0' }}
+                />
+              )}
               <Icon
-                size={18}
-                style={{ color: active ? 'var(--color-primary-light)' : 'inherit', flexShrink: 0 }}
+                size={17}
+                style={{ color: active ? 'var(--color-accent)' : 'inherit', flexShrink: 0 }}
                 aria-hidden="true"
               />
               {label}
-              {active && (
-                <span
-                  className="ml-auto w-1.5 h-1.5 rounded-full"
-                  style={{ background: 'var(--color-primary-light)' }}
-                />
-              )}
             </Link>
           );
         })}
       </nav>
 
       {/* Bas : profil + déconnexion */}
-      <div className="flex flex-col gap-1 pt-4" style={{ borderTop: '1px solid var(--color-surface-border)' }}>
+      <div className="flex flex-col gap-0.5 pt-4" style={{ borderTop: '1px solid var(--color-border)' }}>
         <Link
           href="/profile"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150"
-          style={{ color: 'var(--color-text-secondary)' }}
+          className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors duration-150"
+          style={{ color: 'var(--color-muted)', borderRadius: '8px' }}
           onMouseEnter={e => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-            e.currentTarget.style.color = 'var(--color-text-primary)';
+            e.currentTarget.style.background = 'var(--color-bg)';
+            e.currentTarget.style.color      = 'var(--color-body)';
           }}
           onMouseLeave={e => {
             e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.color = 'var(--color-text-secondary)';
+            e.currentTarget.style.color      = 'var(--color-muted)';
           }}
         >
-          <User size={18} aria-hidden="true" />
+          <User size={17} aria-hidden="true" />
           Mon profil
         </Link>
         <button
           onClick={() => signOut({ callbackUrl: '/' })}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150 w-full text-left"
-          style={{ color: 'var(--color-text-muted)' }}
+          className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors duration-150 w-full text-left"
+          style={{ color: 'var(--color-muted)', borderRadius: '8px' }}
           onMouseEnter={e => {
-            e.currentTarget.style.background = 'rgba(239,68,68,0.08)';
-            e.currentTarget.style.color = 'var(--color-danger)';
+            e.currentTarget.style.background = 'var(--color-error-soft)';
+            e.currentTarget.style.color      = 'var(--color-error)';
           }}
           onMouseLeave={e => {
             e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.color = 'var(--color-text-muted)';
+            e.currentTarget.style.color      = 'var(--color-muted)';
           }}
         >
-          <LogOut size={18} aria-hidden="true" />
+          <LogOut size={17} aria-hidden="true" />
           Déconnexion
         </button>
       </div>

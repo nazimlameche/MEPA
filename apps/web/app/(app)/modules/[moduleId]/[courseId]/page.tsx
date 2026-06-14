@@ -25,20 +25,47 @@ export default async function CoursePage({
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <nav className="text-xs text-gray-400">
-        <Link href="/dashboard" className="hover:text-primary-600">Accueil</Link>
+      <nav className="text-xs" style={{ color: 'var(--color-muted)' }}>
+        <Link
+          href="/dashboard"
+          className="transition-colors duration-150"
+          style={{ color: 'var(--color-muted)' }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-accent)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-muted)')}
+        >
+          Accueil
+        </Link>
         <span className="mx-1">/</span>
-        <Link href={`/modules/${moduleId}`} className="hover:text-primary-600">Module</Link>
+        <Link
+          href={`/modules/${moduleId}`}
+          className="transition-colors duration-150"
+          style={{ color: 'var(--color-muted)' }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-accent)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-muted)')}
+        >
+          Module
+        </Link>
         <span className="mx-1">/</span>
-        <span className="text-gray-600">{course.title}</span>
+        <span style={{ color: 'var(--color-body)' }}>{course.title}</span>
       </nav>
 
       <div>
-        <span className="inline-flex items-center rounded-full bg-primary-50 px-2.5 py-0.5 text-xs font-medium text-primary-600 capitalize mb-2">
+        <span
+          className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium capitalize mb-2"
+          style={{
+            background:   'var(--color-accent-soft)',
+            color:        'var(--color-accent)',
+            borderRadius: '6px',
+          }}
+        >
           {course.level}
         </span>
-        <h1 className="font-display text-2xl font-bold text-gray-900">{course.title}</h1>
-        <p className="text-xs text-gray-400 mt-1">+{course.xpReward} XP à la complétion</p>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-ink)' }}>
+          {course.title}
+        </h1>
+        <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>
+          +{course.xpReward} XP à la complétion
+        </p>
       </div>
 
       <div className="space-y-4">

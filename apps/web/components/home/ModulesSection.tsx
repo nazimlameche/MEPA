@@ -1,106 +1,110 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import RevealOnScroll from '@/components/ui/RevealOnScroll';
+import { useAnimationConfig } from '@/hooks/useAnimationConfig';
 
 const modules = [
   {
-    icon: '📚',
-    title: 'Parcours Théorique',
+    title: 'Parcours théorique',
     description: 'Des leçons structurées avec quiz, textes à trous et histoires illustrées.',
     available: true,
   },
   {
-    icon: '✏️',
-    title: 'Atelier Prompting',
+    title: 'Atelier prompting',
     description: "Apprends à rédiger des prompts efficaces et à éviter les pièges courants.",
     available: true,
   },
   {
-    icon: '🎯',
-    title: 'Cours Sur-Mesure',
-    description: "Des cours générés par l'IA selon tes centres d'intérêt et ton niveau.",
+    title: 'Cours sur-mesure',
+    description: "Des cours générés selon tes centres d'intérêt et ton niveau.",
     available: true,
   },
   {
-    icon: '🧪',
-    title: 'Bac à Sable',
+    title: 'Bac à sable',
     description: "Explore l'IA librement dans un espace sécurisé et modéré.",
     available: false,
   },
 ] as const;
 
 export default function ModulesSection() {
+  const { fadeUp, staggerContainer, transition } = useAnimationConfig();
+
   return (
-    <section id="modules" className="py-24 px-6">
-      <div className="max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-14"
-        >
+    <section
+      id="modules"
+      className="py-24 px-6"
+      style={{ borderTop: '1px solid var(--color-border)' }}
+    >
+      <div className="max-w-5xl mx-auto">
+        <RevealOnScroll className="mb-12">
           <p
             className="text-xs font-semibold mb-3 uppercase tracking-widest"
-            style={{ color: 'var(--color-primary-light)' }}
+            style={{ color: 'var(--color-accent)' }}
           >
             Les modules
           </p>
           <h2
             style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)',
-              fontWeight: 700,
-              color: 'var(--color-text-primary)',
+              fontSize:   'clamp(1.5rem, 3vw, 2.2rem)',
+              fontWeight: 600,
             }}
           >
             Tout ce qu&apos;il faut pour maîtriser l&apos;IA
           </h2>
-        </motion.div>
+        </RevealOnScroll>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {modules.map((mod, i) => (
+        <motion.div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.1 }}
+        >
+          {modules.map((mod) => (
             <motion.div
               key={mod.title}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: i * 0.08 }}
-              whileHover={{ y: -4 }}
-              className="rounded-2xl p-6 flex flex-col gap-4"
+              variants={fadeUp}
+              transition={transition}
+              className="p-6 flex flex-col gap-4"
               style={{
-                background: 'var(--color-surface-card)',
-                border: '1px solid var(--color-surface-border)',
-                transition: 'border-color 0.2s ease',
+                background:   'var(--color-surface)',
+                border:       '1px solid var(--color-border)',
+                borderRadius: '8px',
+                transition:   'border-color 0.2s ease',
               }}
-              onMouseEnter={e => ((e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(123,82,240,0.4)')}
-              onMouseLeave={e => ((e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-surface-border)')}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-accent)';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-border)';
+              }}
             >
-              <span className="text-3xl">{mod.icon}</span>
               <div className="flex-1">
                 <p
-                  className="font-semibold mb-1.5"
-                  style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text-primary)', fontSize: '1rem' }}
+                  className="font-semibold mb-2"
+                  style={{ color: 'var(--color-ink)', fontSize: '0.95rem', fontFamily: 'var(--font-body)' }}
                 >
                   {mod.title}
                 </p>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--color-body)' }}>
                   {mod.description}
                 </p>
               </div>
               <span
-                className="self-start px-3 py-1 rounded-full text-xs font-medium"
-                style={
-                  mod.available
-                    ? { background: 'rgba(16,185,129,0.12)', color: '#10B981' }
-                    : { background: 'rgba(255,255,255,0.05)', color: 'var(--color-text-muted)' }
-                }
+                className="self-start px-2.5 py-1 text-xs font-medium"
+                style={{
+                  borderRadius: '8px',
+                  ...(mod.available
+                    ? { background: 'var(--color-complete-soft)', color: 'var(--color-complete)' }
+                    : { background: 'var(--color-bg)',            color: 'var(--color-muted)', border: '1px solid var(--color-border)' }),
+                }}
               >
                 {mod.available ? 'Disponible' : 'Bientôt'}
               </span>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

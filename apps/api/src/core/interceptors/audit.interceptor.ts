@@ -5,7 +5,6 @@ import {
   CallHandler,
 } from '@nestjs/common';
 import { Observable, tap } from 'rxjs';
-import * as crypto from 'crypto';
 import { AuditService } from '../../modules/audit/audit.service';
 
 interface RequestWithUser {
@@ -29,21 +28,19 @@ export class AuditInterceptor implements NestInterceptor {
       return next.handle();
     }
 
+    // CNIL: passer l'IP brute — AuditService est responsable du hachage SHA-256
     const rawIp = request.headers['x-forwarded-for'] ?? request.ip ?? 'unknown';
-    // CNIL: IP jamais stockée en clair — SHA-256 obligatoire
-    const ipHash = crypto.createHash('sha256').update(rawIp).digest('hex');
     const userId = request.user?.id;
     const action = `${request.method} ${request.url}`;
 
     return next.handle().pipe(
       tap(() => {
-        const entry: { userId?: string; action: string; resource: string; ipHash: string } = {
+        void this.auditService.log({
           action,
           resource: request.url,
-          ipHash,
-        };
-        if (userId !== undefined) entry.userId = userId;
-        void this.auditService.log(entry);
+          ip: rawIp,
+          ...(userId !== undefined ? { userId } : {}),
+        });
       }),
     );
   }
