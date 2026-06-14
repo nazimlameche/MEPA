@@ -11,7 +11,7 @@ interface ApiStats { totalXp: number; level: number; currentStreak: number; }
 
 async function TopbarWithStats({ token, firstName }: { token: string; firstName: string | undefined }) {
   let stats: ApiStats = { totalXp: 0, level: 1, currentStreak: 0 };
-  try { stats = await apiClient.get<ApiStats>('/progress/stats', token, 30); } catch { /* fallback */ }
+  try { stats = await apiClient.get<ApiStats>('/progress/stats', token); } catch { /* fallback */ }
   return (
     <AppTopbar
       streak={stats.currentStreak}

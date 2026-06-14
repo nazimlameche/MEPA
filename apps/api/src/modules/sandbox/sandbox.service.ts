@@ -2,6 +2,8 @@ import { Inject, Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import type { AIProvider } from '@ai-edu/shared';
 import { AI_PROVIDER } from '../../shared/ai/ai-provider.token';
 import { RedisService } from '../../shared/redis/redis.service';
+import { ProgressService } from '../progress/progress.service';
+import { XP_SANDBOX_DAILY } from '../progress/xp.constants';
 
 const RATE_LIMIT_WINDOW_SECONDS = 60;
 const RATE_LIMIT_MAX_MESSAGES = 10;
@@ -15,6 +17,7 @@ export class SandboxService {
   constructor(
     @Inject(AI_PROVIDER) private readonly aiProvider: AIProvider,
     private readonly redis: RedisService,
+    private readonly progressService: ProgressService,
   ) {}
 
   async sendMessage(userId: string, content: string): Promise<{ reply: string; moderated: boolean }> {
@@ -33,6 +36,12 @@ export class SandboxService {
 
     await this.persistMessage(userId, content, response.content);
 
+    // Award daily XP once per day — unique(userId, courseId) ensures idempotence
+    const today = new Date().toISOString().split('T')[0]!;
+    this.progressService
+      .completeCourse(userId, `sandbox-daily-${today}`, XP_SANDBOX_DAILY, 100, { incrementCompleted: false })
+      .catch(() => { /* best-effort */ });
+
     return { reply: response.content, moderated: false };
   }
 
@@ -46,6 +55,14 @@ export class SandboxService {
       // CNIL: rate-limit 10 messages/minute/utilisateur
       throw new HttpException('Limite de 10 messages par minute atteinte', HttpStatus.TOO_MANY_REQUESTS);
     }
+  }
+
+  async getHistory(userId: string): Promise<Array<{ role: string; content: string }>> {
+    const key = `sandbox:session:${userId}`;
+    const existing = await this.redis.get(key);
+    if (!existing) return [];
+    const messages = JSON.parse(existing) as Array<{ role: string; content: string; ts: number }>;
+    return messages.map(({ role, content }) => ({ role, content }));
   }
 
   private async persistMessage(userId: string, userMessage: string, aiReply: string): Promise<void> {

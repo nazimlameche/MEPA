@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowLeft, Zap } from 'lucide-react';
@@ -14,6 +14,7 @@ interface CourseReaderProps {
 }
 
 const INTERACTIVE_TYPES = new Set(['quiz', 'fill_blank']);
+const API_BASE = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001';
 
 export default function CourseReader({ course }: CourseReaderProps) {
   const { data: session }                     = useSession();
@@ -21,6 +22,23 @@ export default function CourseReader({ course }: CourseReaderProps) {
   const [unlockedUpTo, setUnlockedUpTo]       = useState(0);
   const [completed, setCompleted]             = useState(false);
   const [score, setScore]                     = useState({ correct: 0, total: 0 });
+
+  useEffect(() => {
+    const token = session?.accessToken;
+    if (!token) return;
+    fetch(`${API_BASE}/api/progress/courses/${course.id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { status?: string; currentBlock?: number } | null) => {
+        if (data?.status === 'in_progress' && typeof data.currentBlock === 'number' && data.currentBlock > 0) {
+          setCurrentBlock(data.currentBlock);
+          setUnlockedUpTo(data.currentBlock);
+        }
+      })
+      .catch(() => { /* best-effort */ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.accessToken]);
 
   const block         = course.blocks[currentBlock];
   const isLast        = currentBlock === course.blocks.length - 1;
@@ -58,6 +76,15 @@ export default function CourseReader({ course }: CourseReaderProps) {
       const next = currentBlock + 1;
       setCurrentBlock(next);
       if (!INTERACTIVE_TYPES.has(course.blocks[next].type)) setUnlockedUpTo(next);
+      // Best-effort position save
+      const token = session?.accessToken;
+      if (token) {
+        fetch(`${API_BASE}/api/progress/courses/${course.id}/position`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ currentBlock: next }),
+        }).catch(() => { /* best-effort */ });
+      }
     }
   };
 

@@ -48,12 +48,26 @@ export class ProgressService {
     return this.progressRepo.save(progress);
   }
 
+  async savePosition(userId: string, courseId: string, currentBlock: number): Promise<void> {
+    let progress = await this.getCourseProgress(userId, courseId);
+    if (!progress) {
+      progress = this.progressRepo.create({ userId, courseId, status: 'in_progress', currentBlock });
+    } else {
+      progress.status       = progress.status === 'completed' ? 'completed' : 'in_progress';
+      progress.currentBlock = currentBlock;
+    }
+    await this.progressRepo.save(progress);
+  }
+
   async completeCourse(
     userId: string,
     courseId: string,
     xpReward: number,
     score: number,
+    opts: { incrementCompleted?: boolean } = {},
   ): Promise<{ progress: UserProgress; stats: UserStats; levelUp: boolean }> {
+    const incrementCompleted = opts.incrementCompleted !== false;
+
     let progress = await this.getCourseProgress(userId, courseId);
     if (!progress) {
       progress = this.progressRepo.create({ userId, courseId });
@@ -71,9 +85,9 @@ export class ProgressService {
     const levelBefore = stats.level;
 
     if (!alreadyCompleted) {
-      stats.totalXp          += xpReward;
-      stats.completedCourses += 1;
-      stats.level             = calculateLevel(stats.totalXp);
+      stats.totalXp += xpReward;
+      if (incrementCompleted) stats.completedCourses += 1;
+      stats.level = calculateLevel(stats.totalXp);
     }
 
     // Streak update

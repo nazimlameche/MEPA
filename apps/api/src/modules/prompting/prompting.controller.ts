@@ -1,5 +1,5 @@
 import {
-  Controller, Post, Get, Body, UseGuards, Request,
+  Controller, Post, Get, Body, Param, UseGuards, Request,
 } from '@nestjs/common';
 import { Request as ExpressRequest } from 'express';
 import { PromptingService } from './prompting.service';
@@ -38,5 +38,13 @@ export class PromptingController {
   @Get('attempts')
   getMyAttempts(@Request() req: AuthRequest) {
     return this.promptingService.getAttemptsByUser(req.user.id);
+  }
+
+  @Get('attempts/:exerciseId')
+  getExerciseAttempts(
+    @Request() req: AuthRequest,
+    @Param('exerciseId') exerciseId: string,
+  ) {
+    return this.promptingService.getExerciseAttempts(req.user.id, exerciseId);
   }
 }

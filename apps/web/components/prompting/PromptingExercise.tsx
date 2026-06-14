@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowLeft, Zap, RotateCcw } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import type { PromptExercise, PromptScoreOutput } from '@/lib/types/prompting';
 import ScoreDisplay from './ScoreDisplay';
+
+const XP_PERFECT = 25;
+const XP_PARTIAL = 10;
 
 interface Props {
   exercise: PromptExercise;
@@ -14,11 +18,31 @@ interface Props {
 type PageState = 'writing' | 'loading' | 'result' | 'perfect';
 
 export default function PromptingExercise({ exercise }: Props) {
+  const { data: session }       = useSession();
   const [state, setState]       = useState<PageState>('writing');
   const [userPrompt, setPrompt] = useState('');
   const [result, setResult]     = useState<PromptScoreOutput | null>(null);
   const [attempts, setAttempts] = useState(0);
+  const [bestScore, setBestScore] = useState<number | null>(null);
   const [error, setError]       = useState('');
+
+  // Restore prior attempts count and best score on mount
+  useEffect(() => {
+    const token = session?.accessToken;
+    if (!token) return;
+    fetch(`${process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001'}/api/prompting/attempts/${exercise.id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { count?: number; bestScore?: number | null } | null) => {
+        if (data) {
+          if (typeof data.count === 'number' && data.count > 0) setAttempts(data.count);
+          if (typeof data.bestScore === 'number') setBestScore(data.bestScore);
+        }
+      })
+      .catch(() => { /* best-effort */ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.accessToken]);
 
   const MIN_LENGTH = 20;
   const canSubmit  = userPrompt.trim().length >= MIN_LENGTH && state === 'writing';
@@ -29,10 +53,14 @@ export default function PromptingExercise({ exercise }: Props) {
     setState('loading');
 
     try {
+      const token = session?.accessToken;
       const res = await fetch('/api/prompting/score', {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ subject: exercise.subject, userPrompt: userPrompt.trim() }),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ exerciseId: exercise.id, subject: exercise.subject, userPrompt: userPrompt.trim() }),
       });
 
       const data = await res.json() as PromptScoreOutput & { message?: string };
@@ -72,14 +100,24 @@ export default function PromptingExercise({ exercise }: Props) {
           <ArrowLeft size={15} aria-hidden="true" />
           Atelier Prompting
         </Link>
-        {attempts > 0 && (
-          <span
-            className="ml-auto text-xs px-2.5 py-1"
-            style={{ background: 'var(--color-bg)', color: 'var(--color-muted)', border: '1px solid var(--color-border)', borderRadius: '8px' }}
-          >
-            Tentative {attempts}
-          </span>
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          {bestScore !== null && (
+            <span
+              className="text-xs px-2.5 py-1"
+              style={{ background: 'var(--color-bg)', color: 'var(--color-muted)', border: '1px solid var(--color-border)', borderRadius: '8px' }}
+            >
+              Meilleur : {bestScore}/100
+            </span>
+          )}
+          {attempts > 0 && (
+            <span
+              className="text-xs px-2.5 py-1"
+              style={{ background: 'var(--color-bg)', color: 'var(--color-muted)', border: '1px solid var(--color-border)', borderRadius: '8px' }}
+            >
+              Tentative {attempts + 1}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Titre */}
@@ -193,6 +231,10 @@ export default function PromptingExercise({ exercise }: Props) {
         {state === 'result' && result && (
           <motion.div key="result" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="flex flex-col gap-4">
             <ScoreDisplay result={result} />
+            <div className="flex items-center gap-1 px-1" style={{ color: 'var(--color-complete)' }}>
+              <Zap size={14} aria-hidden="true" />
+              <span className="text-sm font-semibold">+{XP_PARTIAL} XP</span>
+            </div>
             <button
               onClick={handleRetry}
               className="w-full py-3 font-semibold text-sm transition-colors duration-150 flex items-center justify-center gap-2"
@@ -221,7 +263,7 @@ export default function PromptingExercise({ exercise }: Props) {
                 <p className="font-semibold" style={{ color: 'var(--color-complete)' }}>Score parfait.</p>
                 <div className="flex items-center gap-1 mt-1">
                   <Zap size={14} style={{ color: 'var(--color-complete)' }} aria-hidden="true" />
-                  <span className="text-sm font-semibold" style={{ color: 'var(--color-complete)' }}>+{exercise.xpReward} XP</span>
+                  <span className="text-sm font-semibold" style={{ color: 'var(--color-complete)' }}>+{XP_PERFECT} XP</span>
                   {attempts > 1 && (
                     <span className="text-xs ml-2" style={{ color: 'var(--color-muted)' }}>en {attempts} tentative{attempts > 1 ? 's' : ''}</span>
                   )}

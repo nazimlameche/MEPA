@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
 import { IsString, MinLength, MaxLength } from 'class-validator';
 import { SandboxService } from './sandbox.service';
 import { JwtAuthGuard } from '../../core/guards/auth.guard';
@@ -18,6 +18,11 @@ interface JwtRequest {
 @UseGuards(JwtAuthGuard)
 export class SandboxController {
   constructor(private readonly sandboxService: SandboxService) {}
+
+  @Get('history')
+  getHistory(@Request() req: JwtRequest) {
+    return this.sandboxService.getHistory(req.user.id);
+  }
 
   @Post('message')
   sendMessage(@Request() req: JwtRequest, @Body() dto: SendMessageDto) {

@@ -39,14 +39,13 @@ export class PromptingService {
     });
     await this.repo.save(attempt);
 
-    if (dto.passed) {
-      await this.progressService.completeCourse(
-        dto.userId,
-        `prompting-${dto.exerciseId}`,
-        xpEarned,
-        dto.totalScore,
-      );
-    }
+    await this.progressService.completeCourse(
+      dto.userId,
+      `prompting-${dto.exerciseId}`,
+      xpEarned,
+      dto.totalScore,
+      { incrementCompleted: false },
+    );
 
     return { attempt, xpEarned };
   }
@@ -65,5 +64,20 @@ export class PromptingService {
       order: { totalScore: 'DESC' },
     });
     return best?.totalScore ?? null;
+  }
+
+  async getExerciseAttempts(
+    userId: string,
+    exerciseId: string,
+  ): Promise<{ bestScore: number | null; lastAttempt: QuizAttempt | null; count: number }> {
+    const attempts = await this.repo.find({
+      where: { userId, exerciseId },
+      order: { attemptedAt: 'DESC' },
+      take: 50,
+    });
+    const bestScore = attempts.length > 0
+      ? attempts.reduce((max, a) => Math.max(max, a.totalScore), 0)
+      : null;
+    return { bestScore, lastAttempt: attempts[0] ?? null, count: attempts.length };
   }
 }

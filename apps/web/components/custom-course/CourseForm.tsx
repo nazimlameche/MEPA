@@ -2,12 +2,15 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSession } from 'next-auth/react';
 import type { SchoolLevel, GeneratedCourseOutput } from '@/lib/types/custom-course';
+
+const API_BASE = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001';
 
 type FormStep = 'interest' | 'level' | 'generating';
 
 interface CourseFormProps {
-  onGenerated: (course: GeneratedCourseOutput) => void;
+  onGenerated: (course: GeneratedCourseOutput, savedId?: string) => void;
 }
 
 const LEVELS: { value: SchoolLevel; label: string; desc: string }[] = [
@@ -22,6 +25,7 @@ const INTEREST_SUGGESTIONS = [
 ];
 
 export default function CourseForm({ onGenerated }: CourseFormProps) {
+  const { data: session }       = useSession();
   const [step, setStep]         = useState<FormStep>('interest');
   const [interest, setInterest] = useState('');
   const [level, setLevel]       = useState<SchoolLevel | ''>('');
@@ -51,7 +55,24 @@ export default function CourseForm({ onGenerated }: CourseFormProps) {
         return;
       }
 
-      onGenerated(data);
+      // Best-effort persistence — CNIL: interest is anonymized server-side in the Next route
+      let savedId: string | undefined;
+      const token = session?.accessToken;
+      if (token) {
+        try {
+          const saveRes = await fetch(`${API_BASE}/api/custom-course/saved`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body:    JSON.stringify({ interests: [interest.trim()], content: data }),
+          });
+          if (saveRes.ok) {
+            const saved = await saveRes.json() as { id?: string };
+            savedId = saved.id;
+          }
+        } catch { /* best-effort */ }
+      }
+
+      onGenerated(data, savedId);
     } catch {
       setError('Impossible de contacter le serveur. Réessaie.');
       setStep('level');

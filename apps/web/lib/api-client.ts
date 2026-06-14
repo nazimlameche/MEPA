@@ -20,7 +20,7 @@ async function request<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const nextOpts = revalidate !== undefined ? { next: { revalidate } } : {};
+  const nextOpts = revalidate !== undefined ? { next: { revalidate } } : { cache: 'no-store' as const };
   const res = await fetch(`${BASE_URL}${path}`, { ...rest, ...nextOpts, headers });
 
   if (!res.ok) {

@@ -38,7 +38,7 @@ export default async function DashboardPage() {
   let progress: UserProgress = mockUserProgress;
   if (token) {
     try {
-      const apiStats = await apiClient.get<ApiStats>('/progress/stats', token, 30);
+      const apiStats = await apiClient.get<ApiStats>('/progress/stats', token);
       progress = apiStatsToProgress(apiStats);
     } catch {
       // API indisponible — fallback sur les mocks

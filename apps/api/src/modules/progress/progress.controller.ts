@@ -40,6 +40,15 @@ export class ProgressController {
     return this.progressService.startCourse(req.user.id, courseId);
   }
 
+  @Post('courses/:courseId/position')
+  savePosition(
+    @Request() req: AuthRequest,
+    @Param('courseId') courseId: string,
+    @Body() body: { currentBlock: number },
+  ) {
+    return this.progressService.savePosition(req.user.id, courseId, body.currentBlock);
+  }
+
   @Post('courses/:courseId/complete')
   completeCourse(
     @Request() req: AuthRequest,
@@ -51,6 +60,7 @@ export class ProgressController {
       courseId,
       body.xpReward,
       body.score,
+      { incrementCompleted: true },
     );
   }
 }

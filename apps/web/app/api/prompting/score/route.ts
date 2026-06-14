@@ -59,8 +59,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'MISTRAL_API_KEY manquant.' }, { status: 500 });
   }
 
-  const body = await req.json() as { subject?: string; userPrompt?: string };
-  const { subject, userPrompt } = body;
+  const body = await req.json() as { exerciseId?: string; subject?: string; userPrompt?: string };
+  const { exerciseId, subject, userPrompt } = body;
 
   if (!subject || !userPrompt || userPrompt.trim().length < 10) {
     return NextResponse.json({ message: 'Prompt trop court.' }, { status: 400 });
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
             'X-No-Cache':    '1', // CNIL
           },
           body: JSON.stringify({
-            exerciseId:  subject.slice(0, 50),
+            exerciseId:  exerciseId ?? subject.slice(0, 50),
             userPrompt,
             totalScore:  parsed.total_score,
             passed:      parsed.passed,
