@@ -31,7 +31,7 @@ interface JwtRequest {
 
 @Controller('custom-course')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('student', 'teacher')
+@Roles('collegien', 'lyceen', 'enseignant', 'professionnel', 'autre')
 export class CustomCourseController {
   constructor(private readonly customCourseService: CustomCourseService) {}
 

@@ -4,7 +4,9 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { UserEntity } from './entities/user.entity';
 import { AuditService } from '../audit/audit.service';
+import { requiresParentalConsent } from '../auth/auth.service';
 import type { CreateUserDto } from '@ai-edu/shared';
+import type { UpdateUserRoleDto } from './dto/update-user-role.dto';
 
 @Injectable()
 export class UsersService {
@@ -27,11 +29,57 @@ export class UsersService {
       passwordHash,
       role:         dto.role,
       birthYear:    dto.birthYear,
+      provider:     'credentials',
       consentGiven: true,
       consentDate:  new Date(),
     });
 
     return this.usersRepo.save(user);
+  }
+
+  /** Creates a user via OAuth — no password, no role, no birthYear initially */
+  async createOAuthUser(dto: { email: string; provider: string }): Promise<UserEntity> {
+    const existing = await this.usersRepo.findOne({ where: { email: dto.email } });
+    if (existing) return existing;
+
+    const user = this.usersRepo.create({
+      email:        dto.email,
+      passwordHash: null,
+      role:         null,
+      birthYear:    null,
+      provider:     dto.provider,
+      consentGiven: false,
+    });
+
+    return this.usersRepo.save(user);
+  }
+
+  /** Sets role + birthYear after Google onboarding; recalculates parental consent need */
+  async updateRole(id: string, dto: UpdateUserRoleDto): Promise<UserEntity> {
+    const user = await this.findById(id);
+
+    user.role      = dto.role;
+    user.birthYear = dto.birthYear;
+
+    const needsParental = requiresParentalConsent(dto.birthYear);
+    if (!needsParental) {
+      // CNIL: consentement automatique si >= 15 ans
+      user.consentGiven = true;
+      user.consentDate  = new Date();
+    } else {
+      user.consentGiven = false;
+    }
+
+    const saved = await this.usersRepo.save(user);
+
+    await this.auditService.log({
+      userId:   id,
+      action:   'user.role_select',
+      resource: 'users',
+      metadata: { role: dto.role, requiresParentalConsent: needsParental },
+    });
+
+    return saved;
   }
 
   async findByEmail(email: string): Promise<UserEntity | null> {

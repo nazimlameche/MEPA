@@ -31,7 +31,7 @@ Tu es un assistant technique senior sur le projet AI-Edu. Tu es responsable de :
 | Frontend | Next.js 15 App Router + TypeScript strict + Tailwind CSS v4 |
 | UI | shadcn/ui + Radix UI + Framer Motion |
 | Backend | NestJS + TypeScript strict |
-| Auth | NextAuth.js v5 — rôles : `student` \| `teacher` \| `admin` |
+| Auth | NextAuth.js v5 + Google OAuth — rôles : `collegien` \| `lyceen` \| `enseignant` \| `professionnel` \| `autre` \| `admin (interne)` |
 | DB | PostgreSQL (dev local Docker) → Supabase EU région `eu-west-1` (prod) |
 | Cache | Redis |
 | LLM | Google Gemini `gemini-2.0-flash` via Provider Pattern (token `AI_PROVIDER`) |
@@ -52,6 +52,8 @@ Tu es un assistant technique senior sur le projet AI-Edu. Tu es responsable de :
 - **Commentaires CNIL** : toute ligne touchant à la vie privée porte `// CNIL:` en préfixe
 - **Composition > héritage** dans l'architecture des modules
 - **Documenter** les endpoints API avec exemples request/response
+- **Notifications** : toutes via `apps/web/lib/toast.ts` (Sonner) — zéro `alert()`, zéro `useState` d'erreur inline ; détails techniques en `console.error` uniquement
+- **Setup local** : `scripts/setup-local.sh` à la racine (Docker + migrations + install)
 
 ---
 
@@ -235,15 +237,32 @@ ai-edu/
 ## Commandes
 
 ```bash
-pnpm dev                   # web + api en parallèle
-pnpm dev --filter=web      # frontend seul
-pnpm dev --filter=api      # backend seul
-docker compose up -d       # PostgreSQL + Redis
-pnpm db:migrate
+bash scripts/setup-local.sh  # setup initial (Docker + migrations + pnpm install)
+pnpm dev                      # web + api en parallèle
+pnpm dev --filter=web         # frontend seul
+pnpm dev --filter=api         # backend seul
+docker compose up -d          # PostgreSQL + Redis
+pnpm --filter api run db:migrate  # appliquer les migrations SQL (runner généralisé)
 pnpm lint
 pnpm typecheck
 pnpm test
 ```
+
+### Variables d'environnement (clés)
+
+| Variable | Usage |
+|----------|-------|
+| `AUTH_SECRET` | Secret NextAuth v5 (remplace `NEXTAUTH_SECRET`) |
+| `AUTH_URL` | URL publique Next.js (remplace `NEXTAUTH_URL`) |
+| `AUTH_GOOGLE_ID` | Client ID Google OAuth |
+| `AUTH_GOOGLE_SECRET` | Client Secret Google OAuth |
+| `AUTH_OAUTH_SECRET` | Secret serveur-à-serveur pour `POST /auth/oauth` |
+| `DATABASE_URL` | PostgreSQL — port **5433** en dev local |
+| `REDIS_URL` | Redis — port **6380** en dev local |
+| `API_URL` | URL interne API (SSR → `http://localhost:3001`) |
+| `NEXT_PUBLIC_API_URL` | URL API côté client |
+
+> Le rôle `admin` n'est **pas** exposé dans l'UI mais reste en BDD pour usage interne. Ne jamais le proposer à l'inscription.
 
 ---
 

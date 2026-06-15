@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ShieldCheck, Mail, Lock } from 'lucide-react';
+import { notify } from '@/lib/toast';
 
 type ConsentStep = 'info' | 'form' | 'done';
 
@@ -10,19 +11,17 @@ export default function ConsentPage() {
   const [step, setStep]               = useState<ConsentStep>('info');
   const [parentEmail, setParentEmail] = useState('');
   const [agreed, setAgreed]           = useState(false);
-  const [error, setError]             = useState('');
   const [loading, setLoading]         = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
 
     if (!parentEmail || !parentEmail.includes('@')) {
-      setError('Adresse email du parent invalide.');
+      notify.error.consent();
       return;
     }
     if (!agreed) {
-      setError('Le parent doit accepter les conditions.');
+      notify.error.consent();
       return;
     }
 
@@ -37,13 +36,16 @@ export default function ConsentPage() {
 
       if (!res.ok) {
         const data = await res.json() as { message?: string };
-        setError(data.message ?? 'Une erreur est survenue.');
+        console.error('[Consent]', res.status, data);
+        notify.error.consent();
         return;
       }
 
+      notify.success.consent();
       setStep('done');
-    } catch {
-      setError('Une erreur est survenue. Réessaie.');
+    } catch (err) {
+      console.error('[Consent] network error', err);
+      notify.error.network();
     } finally {
       setLoading(false);
     }
@@ -142,24 +144,10 @@ export default function ConsentPage() {
               </span>
             </label>
 
-            {error && (
-              <p
-                className="text-sm px-4 py-3"
-                style={{
-                  color:        'var(--color-error)',
-                  background:   'var(--color-error-soft)',
-                  border:       '1px solid rgba(185,28,28,0.2)',
-                  borderRadius: '8px',
-                }}
-              >
-                {error}
-              </p>
-            )}
-
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => { setStep('info'); setError(''); }}
+                onClick={() => setStep('info')}
                 className="flex-1 py-3 text-sm font-medium transition-colors duration-200"
                 style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '8px', color: 'var(--color-body)' }}
               >

@@ -5,7 +5,7 @@ import { ROLES_KEY } from '../decorators/roles.decorator';
 
 interface AuthenticatedUser {
   id: string;
-  role: Role;
+  role: Role | null;
 }
 
 interface RequestWithUser {
@@ -29,7 +29,7 @@ export class RolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<RequestWithUser>();
     const { user } = request;
 
-    if (!requiredRoles.includes(user.role)) {
+    if (user.role === null || !requiredRoles.includes(user.role)) {
       throw new ForbiddenException('Accès refusé : rôle insuffisant');
     }
 

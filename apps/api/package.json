@@ -9,7 +9,7 @@
     "lint": "eslint src/ --ext .ts",
     "test": "jest",
     "type-check": "tsc --noEmit",
-    "db:migrate": "node -e \"const fs=require('fs');const pg=require('pg');const sql=fs.readFileSync('src/shared/database/migrations/001_initial_schema.sql','utf8');const pool=new pg.Pool({connectionString:process.env.DATABASE_URL});pool.query(sql).then(()=>{console.log('Migration done');process.exit(0)}).catch(e=>{console.error(e);process.exit(1)})\""
+    "db:migrate": "node --env-file=.env scripts/run-migrations.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",

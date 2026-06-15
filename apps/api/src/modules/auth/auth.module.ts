@@ -10,6 +10,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
+    ConfigModule,
     UsersModule,
     AuditModule,
     PassportModule,
@@ -17,7 +18,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       imports:    [ConfigModule],
       inject:     [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret:      config.get<string>('JWT_SECRET') ?? config.getOrThrow<string>('NEXTAUTH_SECRET'),
+        // AUTH_SECRET (v5 name) with fallback to NEXTAUTH_SECRET (v4 name) for backward compat
+        secret:      config.get<string>('AUTH_SECRET') ?? config.getOrThrow<string>('NEXTAUTH_SECRET'),
         signOptions: { expiresIn: 7 * 24 * 60 * 60 },
       }),
     }),

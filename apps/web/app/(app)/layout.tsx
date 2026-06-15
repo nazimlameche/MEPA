@@ -29,6 +29,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect('/login');
   }
 
+  // Google OAuth users who haven't completed onboarding yet
+  if (session.user.needsRoleSelection) {
+    redirect('/register/role');
+  }
+
   const token = (session as { accessToken?: string }).accessToken;
   const firstName = session.user?.name?.split(' ')[0];
 

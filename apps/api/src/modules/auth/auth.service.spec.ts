@@ -12,6 +12,7 @@ const mockUsersService = {
   findById:              jest.fn(),
   updateConsent:         jest.fn(),
   updateParentalConsent: jest.fn(),
+  createOAuthUser:       jest.fn(),
 };
 const mockJwtService   = { signAsync: jest.fn().mockResolvedValue('test-token') };
 const mockAuditService = { log: jest.fn().mockResolvedValue(undefined) };
@@ -36,12 +37,12 @@ describe('AuthService', () => {
   describe('register', () => {
     it('crée un compte et retourne un token', async () => {
       mockUsersService.create.mockResolvedValue({
-        id: 'user-1', email: 'test@example.com', role: 'student', birthYear: 2000,
+        id: 'user-1', email: 'test@example.com', role: 'collegien', birthYear: 2000,
         isActive: true, parentalConsent: true,
       });
 
       const result = await service.register({
-        email: 'test@example.com', password: 'password123', role: 'student', birthYear: 2000,
+        email: 'test@example.com', password: 'password123', role: 'collegien', birthYear: 2000,
       });
 
       expect(result.token).toBe('test-token');
@@ -51,12 +52,12 @@ describe('AuthService', () => {
     it('détecte le besoin de consentement parental pour un mineur < 15 ans', async () => {
       const youngBirthYear = new Date().getFullYear() - 12;
       mockUsersService.create.mockResolvedValue({
-        id: 'user-2', email: 'jeune@example.com', role: 'student', birthYear: youngBirthYear,
+        id: 'user-2', email: 'jeune@example.com', role: 'collegien', birthYear: youngBirthYear,
         isActive: true, parentalConsent: false,
       });
 
       const result = await service.register({
-        email: 'jeune@example.com', password: 'password123', role: 'student', birthYear: youngBirthYear,
+        email: 'jeune@example.com', password: 'password123', role: 'collegien', birthYear: youngBirthYear,
       });
 
       expect(result.requiresParentalConsent).toBe(true);
@@ -74,7 +75,7 @@ describe('AuthService', () => {
       mockUsersService.findByEmail.mockResolvedValue({
         id: '1',
         passwordHash: await bcrypt.hash('pw', 10),
-        role: 'student', email: 'a@b.com',
+        role: 'collegien', email: 'a@b.com',
         birthYear: new Date().getFullYear() - 10,
         parentalConsent: false,
         isActive: true,
@@ -86,7 +87,7 @@ describe('AuthService', () => {
       mockUsersService.findByEmail.mockResolvedValue({
         id: '1',
         passwordHash: await bcrypt.hash('password123', 10),
-        role: 'student', email: 'a@b.com',
+        role: 'lyceen', email: 'a@b.com',
         birthYear: 2000,
         parentalConsent: true,
         isActive: true,
@@ -100,7 +101,7 @@ describe('AuthService', () => {
       mockUsersService.findByEmail.mockResolvedValue({
         id: '1',
         passwordHash: await bcrypt.hash('password123', 10),
-        role: 'student', email: 'a@b.com',
+        role: 'collegien', email: 'a@b.com',
         birthYear: 2000, parentalConsent: true,
         isActive: false,
       });

@@ -12,8 +12,14 @@ const PARENTAL_CONSENT_AGE = 15; // CNIL: seuil légal français
 
 export interface JwtPayload {
   sub:   string;
-  role:  string;
+  role:  string | null;
   email: string;
+}
+
+// CNIL: calcul de l'âge à partir de birth_year uniquement — null = âge inconnu (pas de consentement requis)
+export function requiresParentalConsent(birthYear: number | null): boolean {
+  if (birthYear === null) return false;
+  return new Date().getFullYear() - birthYear < PARENTAL_CONSENT_AGE;
 }
 
 @Injectable()
@@ -23,11 +29,6 @@ export class AuthService {
     private readonly jwtService:   JwtService,
     private readonly auditService: AuditService,
   ) {}
-
-  // CNIL: calcul de l'âge à partir de birth_year uniquement
-  private requiresParentalConsent(birthYear: number): boolean {
-    return new Date().getFullYear() - birthYear < PARENTAL_CONSENT_AGE;
-  }
 
   async register(dto: RegisterDto, ip?: string): Promise<{
     token:                   string;
@@ -41,7 +42,7 @@ export class AuthService {
       birthYear: dto.birthYear,
     });
 
-    const needsParentalConsent = this.requiresParentalConsent(dto.birthYear);
+    const needsParentalConsent = requiresParentalConsent(dto.birthYear);
 
     if (!needsParentalConsent) {
       await this.usersService.updateConsent(user.id, true);
@@ -66,6 +67,8 @@ export class AuthService {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) throw new UnauthorizedException('Email ou mot de passe incorrect');
 
+    if (!user.passwordHash) throw new UnauthorizedException('Ce compte utilise une connexion Google');
+
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!valid) throw new UnauthorizedException('Email ou mot de passe incorrect');
 
@@ -74,7 +77,7 @@ export class AuthService {
     }
 
     // CNIL: bloquer l'accès si le consentement parental est requis mais non accordé
-    if (this.requiresParentalConsent(user.birthYear) && !user.parentalConsent) {
+    if (requiresParentalConsent(user.birthYear) && !user.parentalConsent) {
       throw new ForbiddenException('Consentement parental requis');
     }
 
@@ -101,7 +104,7 @@ export class AuthService {
     const user = await this.usersService.findById(userId).catch(() => null);
     if (!user) throw new BadRequestException('Utilisateur introuvable.');
 
-    if (!this.requiresParentalConsent(user.birthYear)) {
+    if (!requiresParentalConsent(user.birthYear)) {
       throw new BadRequestException('Consentement parental non requis pour cet utilisateur.');
     }
 
@@ -117,5 +120,47 @@ export class AuthService {
     });
 
     return { message: 'Demande de consentement enregistrée.' };
+  }
+
+  /** Server-to-server endpoint: upsert a Google OAuth user and return API JWT */
+  async oauthUpsert(email: string, provider: string, ip?: string): Promise<{
+    token:              string;
+    userId:             string;
+    role:               string | null;
+    needsRoleSelection: boolean;
+  }> {
+    let user = await this.usersService.findByEmail(email);
+
+    if (!user) {
+      user = await this.usersService.createOAuthUser({ email, provider });
+
+      // CNIL: audit de la création via OAuth
+      await this.auditService.log({
+        userId:   user.id,
+        action:   'user.oauth_register',
+        resource: 'users',
+        ...(ip !== undefined ? { ip } : {}),
+        metadata: { provider },
+      });
+    } else {
+      // CNIL: audit de la connexion OAuth
+      await this.auditService.log({
+        userId:   user.id,
+        action:   'user.oauth_login',
+        resource: 'users',
+        ...(ip !== undefined ? { ip } : {}),
+        metadata: { provider },
+      });
+    }
+
+    const payload: JwtPayload = { sub: user.id, role: user.role, email: user.email };
+    const token = await this.jwtService.signAsync(payload);
+
+    return {
+      token,
+      userId:             user.id,
+      role:               user.role,
+      needsRoleSelection: user.role === null,
+    };
   }
 }

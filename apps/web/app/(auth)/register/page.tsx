@@ -3,15 +3,9 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
-
-type Level = 'college' | 'lycee' | 'universite' | 'teacher';
-
-const LEVELS: { value: Level; label: string }[] = [
-  { value: 'college',    label: 'Collégien·ne' },
-  { value: 'lycee',      label: 'Lycéen·ne' },
-  { value: 'universite', label: 'Étudiant·e' },
-  { value: 'teacher',    label: 'Enseignant·e' },
-];
+import RoleCards from '@/components/auth/RoleCards';
+import { notify } from '@/lib/toast';
+import type { SignupRole } from '@ai-edu/shared';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -19,35 +13,33 @@ export default function RegisterPage() {
   const [step, setStep]           = useState<1 | 2>(1);
   const [email, setEmail]         = useState('');
   const [password, setPassword]   = useState('');
-  const [level, setLevel]         = useState<Level | ''>('');
+  const [role, setRole]           = useState<SignupRole | ''>('');
   const [birthYear, setBirthYear] = useState('');
-  const [error, setError]         = useState('');
   const [loading, setLoading]     = useState(false);
 
-  const validateStep1 = () => {
-    if (!email || !email.includes('@')) { setError('Adresse email invalide.'); return false; }
-    if (password.length < 8)           { setError('Le mot de passe doit faire au moins 8 caractères.'); return false; }
+  const validateStep1 = (): boolean => {
+    if (!email || !email.includes('@')) { notify.error.register(); return false; }
+    if (password.length < 8)           { notify.error.register(); return false; }
     return true;
   };
 
-  const validateStep2 = () => {
-    if (!level) { setError('Choisis ton niveau.'); return false; }
+  const validateStep2 = (): boolean => {
+    if (!role)                         { notify.error.register(); return false; }
     const year = parseInt(birthYear, 10);
     if (!birthYear || isNaN(year) || year < 1940 || year > CURRENT_YEAR) {
-      setError('Année de naissance invalide.'); return false;
+      notify.error.register();
+      return false;
     }
     return true;
   };
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     if (validateStep1()) setStep(2);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     if (!validateStep2()) return;
 
     setLoading(true);
@@ -55,26 +47,33 @@ export default function RegisterPage() {
       const res = await fetch('/api/register', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ email, password, level, birthYear: parseInt(birthYear, 10) }),
+        body:    JSON.stringify({ email, password, role, birthYear: parseInt(birthYear, 10) }),
       });
 
       if (!res.ok) {
         const data = await res.json() as { message?: string };
-        setError(data.message ?? "Une erreur est survenue.");
+        const msg = data.message ?? '';
+        if (res.status === 409 || msg.toLowerCase().includes('exist')) {
+          notify.error.emailAlreadyExists();
+        } else {
+          notify.error.register();
+        }
+        console.error('[Register]', res.status, data);
         return;
       }
 
+      notify.success.register();
       await signIn('credentials', { email, password, redirect: false });
 
       // CNIL : si âge < 15 ans → flow consentement parental
-      const age = CURRENT_YEAR - parseInt(birthYear, 10);
-      if (age < 15) {
+      if (CURRENT_YEAR - parseInt(birthYear, 10) < 15) {
         window.location.href = '/consent';
       } else {
         window.location.href = '/dashboard';
       }
-    } catch {
-      setError('Une erreur est survenue. Réessaie.');
+    } catch (err) {
+      console.error('[Register] network error', err);
+      notify.error.network();
     } finally {
       setLoading(false);
     }
@@ -151,7 +150,6 @@ export default function RegisterPage() {
             <form onSubmit={handleNext} className="flex flex-col gap-4" noValidate>
               <Field id="email"    label="Adresse email"  type="email"    value={email}    onChange={setEmail}    placeholder="ton@email.fr"        autoComplete="email" />
               <Field id="password" label="Mot de passe"   type="password" value={password} onChange={setPassword} placeholder="8 caractères minimum" autoComplete="new-password" />
-              {error && <ErrorBox message={error} />}
               <SubmitButton label="Continuer" loading={false} />
             </form>
           </>
@@ -160,25 +158,8 @@ export default function RegisterPage() {
         {step === 2 && (
           <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium" style={{ color: 'var(--color-body)' }}>Ton niveau scolaire</p>
-              <div className="grid grid-cols-2 gap-2">
-                {LEVELS.map(l => (
-                  <button
-                    key={l.value}
-                    type="button"
-                    onClick={() => setLevel(l.value)}
-                    className="flex items-center px-4 py-3 text-sm font-medium text-left transition-colors duration-150"
-                    style={{
-                      background:   level === l.value ? 'var(--color-accent-soft)' : 'var(--color-surface)',
-                      border:       `1px solid ${level === l.value ? 'var(--color-accent)' : 'var(--color-border)'}`,
-                      borderRadius: '8px',
-                      color:        level === l.value ? 'var(--color-accent)' : 'var(--color-body)',
-                    }}
-                  >
-                    {l.label}
-                  </button>
-                ))}
-              </div>
+              <p className="text-sm font-medium" style={{ color: 'var(--color-body)' }}>Qui es-tu ?</p>
+              <RoleCards value={role} onChange={setRole} />
             </div>
 
             <Field
@@ -194,12 +175,10 @@ export default function RegisterPage() {
               Si tu as moins de 15 ans, un accord parental sera demandé.
             </p>
 
-            {error && <ErrorBox message={error} />}
-
             <div className="flex gap-3 mt-1">
               <button
                 type="button"
-                onClick={() => { setStep(1); setError(''); }}
+                onClick={() => setStep(1)}
                 className="flex-1 py-3 text-sm font-medium transition-colors duration-200"
                 style={{
                   background:   'var(--color-surface)',
@@ -264,22 +243,6 @@ function Field({
         onBlur={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}
       />
     </div>
-  );
-}
-
-function ErrorBox({ message }: { message: string }) {
-  return (
-    <p
-      className="text-sm px-4 py-3"
-      style={{
-        color:        'var(--color-error)',
-        background:   'var(--color-error-soft)',
-        border:       '1px solid rgba(185,28,28,0.2)',
-        borderRadius: '8px',
-      }}
-    >
-      {message}
-    </p>
   );
 }
 

@@ -1,7 +1,7 @@
 import { MistralProvider } from './mistral.provider';
 import { AIProviderException } from '../exceptions/ai-provider.exception';
 
-const mockFetch = jest.fn<Promise<Response>, [RequestInfo, RequestInit?]>();
+const mockFetch = jest.fn<Promise<Response>, [string | URL | Request, RequestInit?]>();
 global.fetch = mockFetch as typeof fetch;
 
 function makeFetchResponse(body: unknown, ok = true, status = 200): Response {

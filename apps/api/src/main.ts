@@ -10,8 +10,11 @@ async function bootstrap(): Promise<void> {
 
   const app = await NestFactory.create(AppModule);
 
+  // AUTH_URL (NextAuth v5) with fallback to NEXTAUTH_URL (v4)
+  const webOrigin = process.env['AUTH_URL'] ?? process.env['NEXTAUTH_URL'] ?? 'http://localhost:3000';
+
   app.enableCors({
-    origin: [process.env['NEXTAUTH_URL'] ?? 'http://localhost:3000'],
+    origin: [webOrigin],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });

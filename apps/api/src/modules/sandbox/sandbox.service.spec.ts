@@ -4,11 +4,15 @@ import type { AIProvider } from '@ai-edu/shared';
 import { SandboxService } from './sandbox.service';
 import { AI_PROVIDER } from '../../shared/ai/ai-provider.token';
 import { RedisService } from '../../shared/redis/redis.service';
+import { ProgressService } from '../progress/progress.service';
 
 describe('SandboxService', () => {
   let service: SandboxService;
   let aiProvider: jest.Mocked<AIProvider>;
   const mockRedis = { incr: jest.fn(), expire: jest.fn(), get: jest.fn(), set: jest.fn() };
+  const mockProgressService = {
+    completeCourse: jest.fn().mockResolvedValue({ progress: {}, stats: {}, levelUp: false }),
+  };
 
   beforeEach(async () => {
     aiProvider = { chat: jest.fn(), moderate: jest.fn() };
@@ -16,8 +20,9 @@ describe('SandboxService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SandboxService,
-        { provide: AI_PROVIDER, useValue: aiProvider },
-        { provide: RedisService, useValue: mockRedis },
+        { provide: AI_PROVIDER,      useValue: aiProvider },
+        { provide: RedisService,     useValue: mockRedis },
+        { provide: ProgressService,  useValue: mockProgressService },
       ],
     }).compile();
     service = module.get<SandboxService>(SandboxService);
@@ -47,6 +52,7 @@ describe('SandboxService', () => {
     mockRedis.expire.mockResolvedValue(1);
     mockRedis.get.mockResolvedValue(null);
     mockRedis.set.mockResolvedValue('OK');
+    mockProgressService.completeCourse.mockResolvedValue({ progress: {}, stats: {}, levelUp: false });
     aiProvider.moderate.mockResolvedValue({ flagged: false });
     aiProvider.chat.mockResolvedValue({ content: 'Bonjour!', tokensUsed: 12, model: 'mistral-small-latest' });
 

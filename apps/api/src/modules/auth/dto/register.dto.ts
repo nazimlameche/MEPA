@@ -1,5 +1,5 @@
 import { IsEmail, IsString, MinLength, IsIn, IsInt, Min, Max } from 'class-validator';
-import { ROLES, type Role } from '@ai-edu/shared';
+import { SIGNUP_ROLES, type SignupRole } from '@ai-edu/shared';
 
 export class RegisterDto {
   @IsEmail()
@@ -9,8 +9,8 @@ export class RegisterDto {
   @MinLength(8)
   password!: string;
 
-  @IsIn(ROLES)
-  role!: Role;
+  @IsIn(SIGNUP_ROLES)
+  role!: SignupRole;
 
   /** CNIL: used to determine if parental consent is required */
   @IsInt()

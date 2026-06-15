@@ -1,19 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-type FrontendLevel = 'college' | 'lycee' | 'universite' | 'teacher';
-
-// Map frontend level choices to backend role values
-const LEVEL_TO_ROLE: Record<FrontendLevel, 'student' | 'teacher'> = {
-  college:    'student',
-  lycee:      'student',
-  universite: 'student',
-  teacher:    'teacher',
-};
+import { SIGNUP_ROLES, type SignupRole } from '@ai-edu/shared';
 
 interface RegisterBody {
   email:     string;
   password:  string;
-  level:     FrontendLevel;
+  role:      SignupRole;
   birthYear: number;
 }
 
@@ -25,15 +16,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ message: 'Corps de requête invalide.' }, { status: 400 });
   }
 
-  const { email, password, level, birthYear } = body;
+  const { email, password, role, birthYear } = body;
 
-  if (!email || !password || !level || !birthYear) {
+  if (!email || !password || !role || !birthYear) {
     return NextResponse.json({ message: 'Tous les champs sont requis.' }, { status: 400 });
   }
 
-  const role = LEVEL_TO_ROLE[level];
-  if (!role) {
-    return NextResponse.json({ message: 'Niveau invalide.' }, { status: 400 });
+  if (!(SIGNUP_ROLES as readonly string[]).includes(role)) {
+    return NextResponse.json({ message: 'Rôle invalide.' }, { status: 400 });
   }
 
   const apiUrl = process.env['API_URL'] ?? 'http://localhost:3001';

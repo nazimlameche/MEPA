@@ -1,21 +1,35 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { notify } from '@/lib/toast';
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
+  const searchParams            = useSearchParams();
+
+  // Show OAuth error toasts from NextAuth error query param
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (!error) return;
+    if (error === 'OAuthCallback' || error === 'OAuthSignin') {
+      notify.error.loginGoogle();
+    } else if (error === 'Callback') {
+      notify.error.generic();
+    } else {
+      notify.error.login();
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
 
     if (!email || !password) {
-      setError('Tous les champs sont requis.');
+      notify.error.login();
       return;
     }
 
@@ -24,12 +38,15 @@ export default function LoginPage() {
       const result = await signIn('credentials', { email, password, redirect: false });
 
       if (result?.error) {
-        setError('Email ou mot de passe incorrect.');
+        console.error('[Login] credentials error', result.error);
+        notify.error.login();
       } else {
+        notify.success.login();
         window.location.href = '/dashboard';
       }
-    } catch {
-      setError('Une erreur est survenue. Réessaie.');
+    } catch (err) {
+      console.error('[Login] network error', err);
+      notify.error.network();
     } finally {
       setLoading(false);
     }
@@ -140,20 +157,6 @@ export default function LoginPage() {
             />
           </div>
 
-          {error && (
-            <p
-              className="text-sm px-4 py-3"
-              style={{
-                color:        'var(--color-error)',
-                background:   'var(--color-error-soft)',
-                border:       '1px solid rgba(185,28,28,0.2)',
-                borderRadius: '8px',
-              }}
-            >
-              {error}
-            </p>
-          )}
-
           <button
             type="submit"
             disabled={loading}
@@ -187,6 +190,14 @@ export default function LoginPage() {
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }
 

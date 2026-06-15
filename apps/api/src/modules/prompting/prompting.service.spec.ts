@@ -32,7 +32,7 @@ describe('PromptingService', () => {
   });
 
   describe('saveAttempt', () => {
-    it('accorde XP_PERFECT_SCORE (25) et déclenche completeCourse pour un score parfait', async () => {
+    it('accorde XP_PERFECT_SCORE (25) et appelle completeCourse pour un score parfait', async () => {
       const attempt = { id: '1', userId: 'u1', exerciseId: 'ex1', totalScore: 100, passed: true, xpEarned: 25 };
       mockRepo.create.mockReturnValue(attempt);
       mockRepo.save.mockResolvedValue(attempt);
@@ -44,11 +44,11 @@ describe('PromptingService', () => {
 
       expect(result.xpEarned).toBe(25);
       expect(mockProgressService.completeCourse).toHaveBeenCalledWith(
-        'u1', 'prompting-ex1', 25, 100,
+        'u1', 'prompting-ex1', 25, 100, { incrementCompleted: false },
       );
     });
 
-    it('accorde XP_PARTIAL_SCORE (10) et ne déclenche pas completeCourse pour un score partiel', async () => {
+    it('accorde XP_PARTIAL_SCORE (10) et appelle completeCourse pour un score partiel', async () => {
       const attempt = { id: '2', userId: 'u1', exerciseId: 'ex1', totalScore: 70, passed: false, xpEarned: 10 };
       mockRepo.create.mockReturnValue(attempt);
       mockRepo.save.mockResolvedValue(attempt);
@@ -59,7 +59,9 @@ describe('PromptingService', () => {
       });
 
       expect(result.xpEarned).toBe(10);
-      expect(mockProgressService.completeCourse).not.toHaveBeenCalled();
+      expect(mockProgressService.completeCourse).toHaveBeenCalledWith(
+        'u1', 'prompting-ex1', 10, 70, { incrementCompleted: false },
+      );
     });
   });
 });

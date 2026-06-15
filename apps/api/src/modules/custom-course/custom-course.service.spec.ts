@@ -1,7 +1,21 @@
 import { Test } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import type { AIProvider } from '@ai-edu/shared';
 import { CustomCourseService } from './custom-course.service';
+import { GeneratedCourseEntity } from './generated-course.entity';
 import { AI_PROVIDER } from '../../shared/ai/ai-provider.token';
+import { ProgressService } from '../progress/progress.service';
+
+const mockRepo = {
+  create:   jest.fn(),
+  save:     jest.fn(),
+  find:     jest.fn(),
+  findOne:  jest.fn(),
+};
+
+const mockProgressService = {
+  completeCourse: jest.fn().mockResolvedValue({ progress: {}, stats: {}, levelUp: false }),
+};
 
 describe('CustomCourseService', () => {
   let service: CustomCourseService;
@@ -13,11 +27,14 @@ describe('CustomCourseService', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         CustomCourseService,
-        { provide: AI_PROVIDER, useValue: aiProvider },
+        { provide: AI_PROVIDER,                              useValue: aiProvider },
+        { provide: getRepositoryToken(GeneratedCourseEntity), useValue: mockRepo },
+        { provide: ProgressService,                           useValue: mockProgressService },
       ],
     }).compile();
 
     service = moduleRef.get(CustomCourseService);
+    jest.clearAllMocks();
   });
 
   it('parses a valid JSON response into a GeneratedCourse', async () => {
