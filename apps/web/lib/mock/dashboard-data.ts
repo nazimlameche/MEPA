@@ -1,5 +1,6 @@
 import type { UserProgress, ModuleSummary, RecentActivity } from '@/lib/types/dashboard';
 
+// DEV ONLY — ne jamais rendre en production. Remplacé par EMPTY_PROGRESS depuis derive.ts.
 export const mockUserProgress: UserProgress = {
   xp:               340,
   xpToNextLevel:    500,
@@ -9,13 +10,14 @@ export const mockUserProgress: UserProgress = {
   totalCourses:     12,
 };
 
+// Module metadata (title, icon, route, available). progress = 0 car recalculé à l'exécution.
 export const mockModules: ModuleSummary[] = [
   {
     id:          'theory',
     title:       'Parcours Théorique',
     description: 'Leçons structurées, quiz et histoires illustrées.',
     icon:        '📚',
-    progress:    60,
+    progress:    0,
     available:   true,
     route:       '/modules/theory',
   },
@@ -24,7 +26,7 @@ export const mockModules: ModuleSummary[] = [
     title:       'Atelier Prompting',
     description: 'Rédige des prompts efficaces et sécurisés.',
     icon:        '✏️',
-    progress:    20,
+    progress:    0,
     available:   true,
     route:       '/modules/prompting',
   },
@@ -48,6 +50,7 @@ export const mockModules: ModuleSummary[] = [
   },
 ];
 
+// DEV ONLY — ne jamais rendre en production. Activité réelle depuis GET /progress/activity.
 export const mockRecentActivity: RecentActivity[] = [
   {
     id:        '1',
@@ -58,7 +61,7 @@ export const mockRecentActivity: RecentActivity[] = [
   },
   {
     id:        '2',
-    type:      'quiz_passed',
+    type:      'course_completed',
     label:     "Quiz réussi — Types d'IA",
     xpEarned:  15,
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),

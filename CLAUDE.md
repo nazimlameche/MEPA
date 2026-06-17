@@ -34,10 +34,10 @@ Tu es un assistant technique senior sur le projet AI-Edu. Tu es responsable de :
 | Auth | NextAuth.js v5 + Google OAuth — rôles : `collegien` \| `lyceen` \| `enseignant` \| `professionnel` \| `autre` \| `admin (interne)` |
 | DB | PostgreSQL (dev local Docker) → Supabase EU région `eu-west-1` (prod) |
 | Cache | Redis |
-| LLM | Google Gemini `gemini-2.0-flash` via Provider Pattern (token `AI_PROVIDER`) |
+| LLM | Mistral AI `mistral-small-latest` via Provider Pattern (token `AI_PROVIDER`) |
 | CI/CD | GitHub Actions |
 
-**⚠️ LLM** : le projet a migré de Mistral vers Google Gemini pour le MVP. La conformité CNIL complète (hébergement souverain) est différée à la prod. Le Provider Pattern garantit qu'on peut switcher en changeant une seule ligne dans `ai.module.ts`.
+**⚠️ LLM** : le provider actif est **Mistral AI** (`mistral-small-latest`) via `MISTRAL_API_KEY` / `MISTRAL_MODEL`. Le Provider Pattern (`AI_PROVIDER` dans `ai.module.ts`) permet un swap en une ligne pour les services NestJS (`sandbox`, `custom-course`). **Attention** : deux route handlers Next.js court-circuitent le pattern et appellent `api.mistral.ai` en `fetch` direct — `apps/web/app/api/prompting/score/route.ts` et `apps/web/app/api/custom-course/generate/route.ts` — le swap « une ligne » ne couvre pas ces 2 chemins. La conformité CNIL complète (hébergement souverain EU) est différée à la prod.
 
 **⚠️ Supabase** : région EU uniquement. Documenter ce choix dans le registre des traitements CNIL.
 
@@ -59,7 +59,7 @@ Tu es un assistant technique senior sur le projet AI-Edu. Tu es responsable de :
 
 ## Règles CNIL — NON NÉGOCIABLES
 
-1. **Zéro PII dans les prompts LLM** — anonymiser avant tout appel Gemini
+1. **Zéro PII dans les prompts LLM** — anonymiser avant tout appel Mistral
 2. **Zero-retention** — header `X-No-Cache` sur tous les appels LLM
 3. **IP jamais stockée** — uniquement son hash SHA-256 dans `audit_logs`
 4. **Consentement parental** — flow obligatoire si `birth_year` → âge < 15 ans
@@ -75,9 +75,9 @@ Tu es un assistant technique senior sur le projet AI-Edu. Tu es responsable de :
 | ID | Nom | LLM | Description |
 |----|-----|-----|-------------|
 | M1 | Parcours Théorique | ❌ | Cours structurés niveaux/paliers, quiz, texte à trou, histoires illustrées |
-| M2 | Atelier Prompting | ✅ Gemini | Sujet donné → l'élève rédige un prompt → scoring en 3 étapes |
-| M3 | Bac à Sable | ✅ Gemini | Chat IA libre avec modération et rate-limiting |
-| M4 | Cours Sur-Mesure | ✅ Gemini | Centre d'intérêt + niveau → cours personnalisé depuis patterns |
+| M2 | Atelier Prompting | ✅ Mistral | Sujet donné → l'élève rédige un prompt → scoring en 3 étapes |
+| M3 | Bac à Sable | ✅ Mistral | Chat IA libre avec modération et rate-limiting |
+| M4 | Cours Sur-Mesure | ✅ Mistral | Centre d'intérêt + niveau → cours personnalisé depuis patterns |
 
 **Principe de modularité** : tout module implémente `LearningModule` et s'enregistre dans `ModuleRegistryService`. Ajouter M5 ne modifie **jamais** le core.
 
@@ -133,7 +133,7 @@ type CourseBlock =
   | { type: 'tip';        content: string };
 ```
 
-**Règle de parsing** : wrapper tout appel Gemini dans try/catch + validation Zod. Échec → retry une fois → erreur 422 au client.
+**Règle de parsing** : wrapper tout appel Mistral dans try/catch + validation Zod. Échec → retry une fois → erreur 422 au client.
 
 ---
 
@@ -210,7 +210,7 @@ ai-edu/
 │           ├── core/           guards, interceptors, pipes, module-registry
 │           ├── modules/        auth, users, courses, prompting, sandbox, custom-course, progress, audit
 │           └── shared/
-│               ├── ai/         GeminiProvider, AI_PROVIDER token
+│               ├── ai/         MistralProvider, AI_PROVIDER token
 │               ├── database/   TypeORM config + migrations
 │               └── redis/
 ├── packages/
@@ -261,6 +261,8 @@ pnpm test
 | `REDIS_URL` | Redis — port **6380** en dev local |
 | `API_URL` | URL interne API (SSR → `http://localhost:3001`) |
 | `NEXT_PUBLIC_API_URL` | URL API côté client |
+| `MISTRAL_API_KEY` | Clé API Mistral AI (services NestJS + route handlers Next.js) |
+| `MISTRAL_MODEL` | Modèle Mistral (`mistral-small-latest`) |
 
 > Le rôle `admin` n'est **pas** exposé dans l'UI mais reste en BDD pour usage interne. Ne jamais le proposer à l'inscription.
 

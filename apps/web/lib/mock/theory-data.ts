@@ -9,7 +9,6 @@ export const mockCourseList: CourseListItem[] = [
     tier:             1,
     xpReward:         10,
     estimatedMinutes: 5,
-    completed:        true,
   },
   {
     id:               'llm-fonctionnement',
@@ -19,7 +18,6 @@ export const mockCourseList: CourseListItem[] = [
     tier:             2,
     xpReward:         15,
     estimatedMinutes: 8,
-    completed:        true,
   },
   {
     id:               'hallucinations',
@@ -29,7 +27,6 @@ export const mockCourseList: CourseListItem[] = [
     tier:             3,
     xpReward:         15,
     estimatedMinutes: 7,
-    completed:        false,
   },
   {
     id:               'biais-algorithmiques',
@@ -39,7 +36,6 @@ export const mockCourseList: CourseListItem[] = [
     tier:             1,
     xpReward:         20,
     estimatedMinutes: 8,
-    completed:        false,
   },
   {
     id:               'donnees-personnelles',
@@ -49,7 +45,6 @@ export const mockCourseList: CourseListItem[] = [
     tier:             2,
     xpReward:         20,
     estimatedMinutes: 10,
-    completed:        false,
   },
   {
     id:               'impact-environnemental',
@@ -59,11 +54,120 @@ export const mockCourseList: CourseListItem[] = [
     tier:             3,
     xpReward:         15,
     estimatedMinutes: 7,
-    completed:        false,
   },
 ];
 
 export const mockCourses: Record<string, Course> = {
+  'intro-ia': {
+    id:               'intro-ia',
+    moduleId:         'theory',
+    title:            "Qu'est-ce qu'une IA ?",
+    description:      "Comprendre ce qu'est l'intelligence artificielle et comment elle fonctionne.",
+    level:            1,
+    tier:             1,
+    xpReward:         10,
+    estimatedMinutes: 5,
+    blocks: [
+      {
+        type:    'text',
+        content: "**L'intelligence artificielle** (IA) désigne des programmes capables d'accomplir des tâches qui, réalisées par un humain, nécessiteraient de l'intelligence — comme comprendre du texte, reconnaître des images ou répondre à des questions.\n\nContrairement à un moteur de recherche qui cherche des pages web existantes, une IA **génère** du contenu à partir de ce qu'elle a appris. Elle ne « cherche » pas — elle prédit et produit.",
+      },
+      {
+        type:      'story',
+        title:     "L'IA, ce n'est pas de la magie",
+        narrative: "Léa pense que l'IA comprend vraiment ce qu'elle lui dit, comme un ami. Elle lui demande si elle va bien. L'IA répond chaleureusement : « Je vais très bien, merci de demander ! » Mais Léa découvre ensuite que l'IA n'a pas d'émotions — elle a juste prédit la réponse la plus probable à une telle question, basée sur des millions d'échanges humains.",
+        moral:     "Une IA produit des réponses vraisemblables, pas des réponses ressenties. Elle imite la forme du langage humain sans en vivre le fond.",
+      },
+      {
+        type:    'text',
+        content: "Les IA d'aujourd'hui — comme les assistants conversationnels — apprennent en lisant des **milliards de textes** : articles, livres, sites web, forums. Ces textes ont été écrits par des humains, avec leurs erreurs, leurs opinions et leurs préjugés.\n\nCela signifie que l'IA peut reproduire des informations incorrectes ou biaisées qu'elle a lues pendant son apprentissage.",
+      },
+      {
+        type:       'fill_blank',
+        sentence:   "Une IA générative produit du contenu en ___ le mot ou l'image le plus probable à partir de ce qu'elle a appris.",
+        blank_word: "prédisant",
+        hint:       "Elle ne cherche pas, elle anticipe la suite.",
+      },
+      {
+        type:    'tip',
+        content: "💡 IA ≠ robot pensant. Une IA n'a pas de conscience, de désirs ni d'émotions. Elle est très douée pour imiter le langage humain — ce qui peut être utile, mais aussi trompeur.",
+      },
+      {
+        type:          'quiz',
+        question:      "Quelle est la principale différence entre un moteur de recherche et une IA générative ?",
+        options:       [
+          "Le moteur de recherche est plus rapide",
+          "L'IA générative crée du nouveau contenu ; le moteur de recherche retrouve des pages existantes",
+          "L'IA générative ne peut pas se tromper",
+          "Le moteur de recherche comprend mieux les émotions",
+        ],
+        correct_index: 1,
+        explanation:   "Un moteur de recherche indexe et retrouve des pages web existantes. Une IA générative produit du texte (ou des images) nouveau à partir de patterns appris — elle ne pointe pas vers une source, elle génère une réponse.",
+      },
+    ],
+  },
+
+  'llm-fonctionnement': {
+    id:               'llm-fonctionnement',
+    moduleId:         'theory',
+    title:            'Comment fonctionne un LLM ?',
+    description:      'Comprendre le fonctionnement des grands modèles de langage.',
+    level:            1,
+    tier:             2,
+    xpReward:         15,
+    estimatedMinutes: 8,
+    blocks: [
+      {
+        type:    'text',
+        content: "Un **LLM** (Large Language Model, ou Grand Modèle de Langage) est une IA entraînée sur d'énormes quantités de texte pour prédire quel mot (ou « token ») vient ensuite dans une phrase.\n\nC'est simple comme principe : à chaque étape, le modèle calcule la probabilité de chaque mot possible et choisit le plus probable (ou un légèrement aléatoire pour varier). Répété des milliers de fois, cela produit des paragraphes entiers.",
+      },
+      {
+        type:       'fill_blank',
+        sentence:   "Un LLM génère du texte en prédisant, mot par mot, quel ___ vient le plus probablement ensuite.",
+        blank_word: "token",
+        hint:       "Ce mot désigne l'unité de base du langage pour une IA — souvent un mot ou un morceau de mot.",
+      },
+      {
+        type:    'text',
+        content: "Cette mécanique de prédiction explique deux choses importantes :\n\n1. **Les hallucinations** : si l'IA doit compléter une phrase avec une statistique rare qu'elle n'a pas apprise, elle invente un chiffre qui « semble » juste stylistiquement. Elle ne sait pas qu'elle ment — elle prédit.\n\n2. **L'importance du contexte** : un prompt vague donne à l'IA peu d'informations pour orienter sa prédiction. Un prompt précis réduit l'espace des réponses possibles et améliore la qualité.",
+      },
+      {
+        type:      'story',
+        title:     "Le prix du prompt vague",
+        narrative: "Théo demande à une IA : « Parle-moi de l'énergie. » L'IA produit 400 mots sur l'énergie physique, l'énergie renouvelable, l'énergie intérieure… Théo voulait en fait une explication sur les énergies fossiles pour son cours de géographie. Il reformule et envoie 3 autres requêtes. Chaque requête consomme de l'énergie réelle dans un data center.",
+        moral:     "Un prompt précis dès le départ économise du temps, améliore la réponse et réduit l'impact environnemental.",
+      },
+      {
+        type:    'tip',
+        content: "💡 Un LLM n'a pas accès à internet en temps réel (sauf si c'est explicitement indiqué). Ses connaissances s'arrêtent à une date limite — sa « date de coupure ». Les événements récents peuvent lui être inconnus.",
+      },
+      {
+        type:          'quiz',
+        question:      "Pourquoi un LLM peut-il inventer des informations fausses avec un ton très assuré ?",
+        options:       [
+          "Parce qu'il cherche à tromper l'utilisateur",
+          "Parce qu'il prédit le mot le plus probable sans vérifier si l'information est vraie",
+          "Parce qu'il est mal programmé",
+          "Parce qu'il n'a pas accès à internet",
+        ],
+        correct_index: 1,
+        explanation:   "Un LLM prédit des tokens selon leur probabilité dans un contexte donné — il n'a pas de mécanisme de vérification des faits intégré. Il peut donc produire des affirmations fausses avec la même fluidité que des vraies. C'est ce qu'on appelle une hallucination.",
+      },
+      {
+        type:          'quiz',
+        question:      "Que se passe-t-il si tu envoies un prompt très vague à un LLM ?",
+        options:       [
+          "Le LLM refuse de répondre",
+          "Le LLM demande toujours des précisions",
+          "Le LLM produit une réponse générique qui risque de ne pas correspondre à ton besoin",
+          "Le LLM invente une question précise à ta place",
+        ],
+        correct_index: 2,
+        explanation:   "Avec peu de contexte, le LLM a un grand espace de réponses possibles. Il choisit la réponse statistiquement la plus probable — souvent générique. Donner du contexte, un rôle, un format attendu guide la prédiction vers quelque chose d'utile.",
+      },
+    ],
+  },
+
   'hallucinations': {
     id:               'hallucinations',
     moduleId:         'theory',

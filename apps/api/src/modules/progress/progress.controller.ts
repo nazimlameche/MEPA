@@ -19,6 +19,11 @@ export class ProgressController {
     return this.progressService.getStats(req.user.id);
   }
 
+  @Get('activity')
+  getActivity(@Request() req: AuthRequest) {
+    return this.progressService.getRecentActivity(req.user.id);
+  }
+
   @Get('courses')
   getUserProgress(@Request() req: AuthRequest) {
     return this.progressService.getUserProgress(req.user.id);

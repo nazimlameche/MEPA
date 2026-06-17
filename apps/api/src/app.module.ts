@@ -21,6 +21,8 @@ import { UserProgress } from './modules/progress/user-progress.entity';
 import { UserStats } from './modules/progress/user-stats.entity';
 import { QuizAttempt } from './modules/prompting/quiz-attempt.entity';
 import { GeneratedCourseEntity } from './modules/custom-course/generated-course.entity';
+import { CustomCourseParcours } from './modules/custom-course/entities/custom-course-parcours.entity';
+import { CustomCourseChapter } from './modules/custom-course/entities/custom-course-chapter.entity';
 import { AuditInterceptor } from './core/interceptors/audit.interceptor';
 import { HealthController } from './health.controller';
 
@@ -35,7 +37,7 @@ import { HealthController } from './health.controller';
       useFactory: (config: ConfigService) => ({
         type:        'postgres',
         url:         config.getOrThrow<string>('DATABASE_URL'),
-        entities:    [UserEntity, Course, AuditLog, UserProgress, UserStats, QuizAttempt, GeneratedCourseEntity],
+        entities:    [UserEntity, Course, AuditLog, UserProgress, UserStats, QuizAttempt, GeneratedCourseEntity, CustomCourseParcours, CustomCourseChapter],
         synchronize: config.get('NODE_ENV') === 'development',
         logging:     config.get('NODE_ENV') === 'development',
         ssl:         config.get('NODE_ENV') === 'production' ? { rejectUnauthorized: false } : false,

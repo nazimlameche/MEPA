@@ -7,6 +7,7 @@ import { UserStats } from './user-stats.entity';
 const mockProgressRepo = {
   findOneBy: jest.fn(),
   findBy:    jest.fn(),
+  find:      jest.fn(),
   create:    jest.fn(),
   save:      jest.fn(),
 };
@@ -31,6 +32,38 @@ describe('ProgressService', () => {
 
     service = module.get<ProgressService>(ProgressService);
     jest.clearAllMocks();
+  });
+
+  describe('getRecentActivity', () => {
+    it('retourne [] quand aucune progression complétée', async () => {
+      mockProgressRepo.find.mockResolvedValue([]);
+      const result = await service.getRecentActivity('u1');
+      expect(result).toEqual([]);
+    });
+
+    it('mappe correctement les 3 types via préfixe de courseId', async () => {
+      const now = new Date();
+      mockProgressRepo.find.mockResolvedValue([
+        { id: '1', courseId: 'intro-ia',          xpEarned: 50, completedAt: now, status: 'completed' },
+        { id: '2', courseId: 'prompting-ex1',     xpEarned: 25, completedAt: now, status: 'completed' },
+        { id: '3', courseId: 'custom-abc',        xpEarned: 30, completedAt: now, status: 'completed' },
+      ]);
+      const result = await service.getRecentActivity('u1');
+      expect(result[0]!.type).toBe('course_completed');
+      expect(result[1]!.type).toBe('prompt_scored');
+      expect(result[2]!.type).toBe('course_generated');
+    });
+
+    it('respecte la limite et demande l\'ordre DESC', async () => {
+      mockProgressRepo.find.mockResolvedValue([]);
+      await service.getRecentActivity('u1', 5);
+      expect(mockProgressRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          order: { completedAt: 'DESC' },
+          take:  5,
+        }),
+      );
+    });
   });
 
   describe('completeCourse', () => {

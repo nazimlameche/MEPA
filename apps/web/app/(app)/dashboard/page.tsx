@@ -1,6 +1,16 @@
 import { auth } from '@/lib/auth';
-import { mockUserProgress, mockModules, mockRecentActivity } from '@/lib/mock/dashboard-data';
+import { mockModules } from '@/lib/mock/dashboard-data';
+import { mockCourseList } from '@/lib/mock/theory-data';
 import { apiClient } from '@/lib/api-client';
+import {
+  EMPTY_PROGRESS,
+  apiStatsToProgress,
+  computeModuleProgress,
+  toRecentActivity,
+  type ApiStats,
+  type ActivityItemDto,
+  type CourseProgressDto,
+} from '@/lib/progress/derive';
 import XPBar from '@/components/dashboard/XPBar';
 import StatCard from '@/components/dashboard/StatCard';
 import ModuleCard from '@/components/dashboard/ModuleCard';
@@ -8,42 +18,38 @@ import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
 import Section from '@/components/layout/Section';
-import type { UserProgress } from '@/lib/types/dashboard';
-
-const XP_PER_LEVEL = 500;
-
-interface ApiStats {
-  totalXp:          number;
-  level:            number;
-  currentStreak:    number;
-  completedCourses: number;
-}
-
-function apiStatsToProgress(api: ApiStats): UserProgress {
-  return {
-    xp:               api.totalXp % XP_PER_LEVEL,
-    xpToNextLevel:    XP_PER_LEVEL,
-    level:            api.level,
-    streak:           api.currentStreak,
-    completedCourses: api.completedCourses,
-    totalCourses:     mockModules.length,
-  };
-}
+import type { UserProgress, ModuleSummary } from '@/lib/types/dashboard';
 
 export default async function DashboardPage() {
   const session   = await auth();
   const token     = session?.accessToken;
   const firstName = session?.user?.name?.split(' ')[0] ?? 'toi';
 
-  let progress: UserProgress = mockUserProgress;
+  let progress: UserProgress      = EMPTY_PROGRESS;
+  let modulesWithProgress: ModuleSummary[] = mockModules.map(m => ({ ...m, progress: 0 }));
+  let recentActivities            = toRecentActivity([], mockCourseList);
+
   if (token) {
     try {
-      const apiStats = await apiClient.get<ApiStats>('/progress/stats', token);
-      progress = apiStatsToProgress(apiStats);
+      const [statsData, coursesData, activityData] = await Promise.all([
+        apiClient.get<ApiStats>('/progress/stats', token),
+        apiClient.get<CourseProgressDto[]>('/progress/courses', token),
+        apiClient.get<ActivityItemDto[]>('/progress/activity', token),
+      ]);
+
+      progress = apiStatsToProgress(statsData);
+
+      const completedIds   = coursesData.filter(c => c.status === 'completed').map(c => c.courseId);
+      const moduleProgress = computeModuleProgress(completedIds, mockModules, mockCourseList);
+      modulesWithProgress  = mockModules.map(m => ({ ...m, progress: moduleProgress[m.id] ?? 0 }));
+
+      recentActivities = toRecentActivity(activityData, mockCourseList);
     } catch {
-      // API indisponible — fallback sur les mocks
+      // API unavailable — show zeros, never mocks
     }
   }
+
+  const totalXpDisplay = progress.xp + (progress.level - 1) * (progress.xpToNextLevel);
 
   return (
     <PageContainer size="wide">
@@ -59,9 +65,9 @@ export default async function DashboardPage() {
       <Section>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard label="Jours consécutifs"  value={progress.streak}           sub="Streak actuel" />
-          <StatCard label="XP total"           value={progress.xp + (progress.level - 1) * XP_PER_LEVEL} sub={`Niveau ${progress.level}`} />
+          <StatCard label="XP total"           value={totalXpDisplay}            sub={`Niveau ${progress.level}`} />
           <StatCard label="Cours terminés"     value={progress.completedCourses}  sub={`sur ${progress.totalCourses}`} />
-          <StatCard label="Taux de complétion" value={`${Math.round((progress.completedCourses / progress.totalCourses) * 100)}%`} sub="Objectif : 100%" />
+          <StatCard label="Taux de complétion" value={`${Math.round((progress.completedCourses / Math.max(progress.totalCourses, 1)) * 100)}%`} sub="Objectif : 100%" />
         </div>
       </Section>
 
@@ -69,13 +75,13 @@ export default async function DashboardPage() {
         <div className="lg:col-span-2">
           <Section title="Modules">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {mockModules.map(mod => <ModuleCard key={mod.id} mod={mod} />)}
+              {modulesWithProgress.map(mod => <ModuleCard key={mod.id} mod={mod} />)}
             </div>
           </Section>
         </div>
         <div>
           <Section title="Activité récente">
-            <ActivityFeed activities={mockRecentActivity} />
+            <ActivityFeed activities={recentActivities} />
           </Section>
         </div>
       </div>

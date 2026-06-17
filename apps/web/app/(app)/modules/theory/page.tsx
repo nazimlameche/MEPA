@@ -1,13 +1,41 @@
+import { auth } from '@/lib/auth';
+import { apiClient } from '@/lib/api-client';
 import { mockCourseList } from '@/lib/mock/theory-data';
 import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
 import Section from '@/components/layout/Section';
 import LearningPath from '@/components/course/LearningPath';
 
-export default function TheoryModulePage() {
-  const completed = mockCourseList.filter(c => c.completed).length;
-  const total     = mockCourseList.length;
-  const pct       = Math.round((completed / total) * 100);
+interface CourseProgressDto {
+  courseId:    string;
+  status:      'not_started' | 'in_progress' | 'completed';
+  completedAt: string | null;
+}
+
+export default async function TheoryModulePage() {
+  const session = await auth();
+  const token   = session?.accessToken;
+
+  let completedIds = new Set<string>();
+  if (token) {
+    try {
+      const rows = await apiClient.get<CourseProgressDto[]>('/progress/courses', token);
+      completedIds = new Set(
+        rows.filter(r => r.status === 'completed').map(r => r.courseId),
+      );
+    } catch {
+      // API unavailable — no course marked as completed
+    }
+  }
+
+  const courses = mockCourseList.map(c => ({
+    ...c,
+    completed: completedIds.has(c.id),
+  }));
+
+  const completed = courses.filter(c => c.completed).length;
+  const total     = courses.length;
+  const pct       = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   const progressBar = (
     <div style={{ maxWidth: '320px' }}>
@@ -42,7 +70,7 @@ export default function TheoryModulePage() {
 
       <Section>
         <LearningPath
-          courses={mockCourseList}
+          courses={courses}
           moduleHref="/modules/theory"
         />
       </Section>

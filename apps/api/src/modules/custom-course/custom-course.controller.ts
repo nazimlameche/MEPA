@@ -1,29 +1,13 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
-import { IsArray, IsString, ArrayMaxSize, IsIn } from 'class-validator';
-import { CustomCourseService, type GeneratedCourse } from './custom-course.service';
+import {
+  Controller, Post, Get, Put, Delete, Body, Param,
+  UseGuards, Request,
+} from '@nestjs/common';
+import { CustomCourseService } from './custom-course.service';
+import { CreateParcoursDto } from './dto/create-parcours.dto';
+import { SaveChapterContentDto } from './dto/save-chapter-content.dto';
 import { JwtAuthGuard } from '../../core/guards/auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
-
-class GenerateDto {
-  /** CNIL: interests must never contain name, email, or any PII */
-  @IsArray()
-  @ArrayMaxSize(10)
-  @IsString({ each: true })
-  interests!: string[];
-
-  @IsIn(['beginner', 'intermediate', 'advanced'])
-  level!: 'beginner' | 'intermediate' | 'advanced';
-}
-
-class SaveCourseDto {
-  @IsArray()
-  @ArrayMaxSize(10)
-  @IsString({ each: true })
-  interests!: string[];
-
-  content!: unknown;
-}
 
 interface JwtRequest {
   user: { id: string };
@@ -35,28 +19,42 @@ interface JwtRequest {
 export class CustomCourseController {
   constructor(private readonly customCourseService: CustomCourseService) {}
 
-  @Post('generate')
-  generate(@Request() req: JwtRequest, @Body() dto: GenerateDto): Promise<GeneratedCourse> {
-    return this.customCourseService.generate(req.user.id, dto);
+  @Post('parcours')
+  createParcours(@Request() req: JwtRequest, @Body() dto: CreateParcoursDto) {
+    return this.customCourseService.createParcours(req.user.id, dto);
   }
 
-  @Post('saved')
-  saveCourse(@Request() req: JwtRequest, @Body() dto: SaveCourseDto) {
-    return this.customCourseService.saveCourse(req.user.id, dto.interests, dto.content);
+  @Get('parcours')
+  getUserParcours(@Request() req: JwtRequest) {
+    return this.customCourseService.getUserParcours(req.user.id);
   }
 
-  @Get('saved')
-  getSavedCourses(@Request() req: JwtRequest) {
-    return this.customCourseService.getSavedCourses(req.user.id);
+  @Get('parcours/:id')
+  getParcours(@Request() req: JwtRequest, @Param('id') id: string) {
+    return this.customCourseService.getParcours(id, req.user.id);
   }
 
-  @Get('saved/:id')
-  getSavedCourse(@Request() req: JwtRequest, @Param('id') id: string) {
-    return this.customCourseService.getSavedCourse(req.user.id, id);
+  @Delete('parcours/:id')
+  deleteParcours(@Request() req: JwtRequest, @Param('id') id: string) {
+    return this.customCourseService.deleteParcours(id, req.user.id);
   }
 
-  @Post('saved/:id/complete')
-  completeSavedCourse(@Request() req: JwtRequest, @Param('id') id: string) {
-    return this.customCourseService.completeSavedCourse(req.user.id, id);
+  @Get('chapters/:id')
+  getChapter(@Request() req: JwtRequest, @Param('id') id: string) {
+    return this.customCourseService.getChapter(id, req.user.id);
+  }
+
+  @Put('chapters/:id/content')
+  saveChapterContent(
+    @Request() req: JwtRequest,
+    @Param('id') id: string,
+    @Body() dto: SaveChapterContentDto,
+  ) {
+    return this.customCourseService.saveChapterContent(id, req.user.id, dto);
+  }
+
+  @Post('chapters/:id/complete')
+  completeChapter(@Request() req: JwtRequest, @Param('id') id: string) {
+    return this.customCourseService.completeChapter(id, req.user.id);
   }
 }

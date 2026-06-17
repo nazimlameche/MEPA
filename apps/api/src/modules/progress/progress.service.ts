@@ -6,6 +6,22 @@ import { UserStats } from './user-stats.entity';
 
 const XP_PER_LEVEL = 500;
 
+export type ActivityType = 'course_completed' | 'prompt_scored' | 'course_generated';
+
+export interface ActivityItemDto {
+  id: string;
+  type: ActivityType;
+  courseId: string;
+  xpEarned: number;
+  timestamp: Date;
+}
+
+function deriveActivityType(courseId: string): ActivityType {
+  if (courseId.startsWith('prompting-')) return 'prompt_scored';
+  if (courseId.startsWith('custom-'))    return 'course_generated';
+  return 'course_completed';
+}
+
 function calculateLevel(totalXp: number): number {
   return Math.floor(totalXp / XP_PER_LEVEL) + 1;
 }
@@ -57,6 +73,22 @@ export class ProgressService {
       progress.currentBlock = currentBlock;
     }
     await this.progressRepo.save(progress);
+  }
+
+  // CNIL: dérivé de user_progress uniquement — jamais de quiz_attempts.userPrompt (PII)
+  async getRecentActivity(userId: string, limit = 10): Promise<ActivityItemDto[]> {
+    const rows = await this.progressRepo.find({
+      where: { userId, status: 'completed' },
+      order: { completedAt: 'DESC' },
+      take:  limit,
+    });
+    return rows.map(r => ({
+      id:        r.id,
+      type:      deriveActivityType(r.courseId),
+      courseId:  r.courseId,
+      xpEarned:  r.xpEarned,
+      timestamp: r.completedAt!,
+    }));
   }
 
   async completeCourse(

@@ -32,12 +32,20 @@ export interface TipBlock {
   content: string;
 }
 
+export interface PromptingChallengeBlock {
+  type: 'prompting_challenge';
+  numero: number;
+  titre: string;
+  consigne: string;
+}
+
 export type CourseBlock =
   | TextBlock
   | QuizBlock
   | FillBlankBlock
   | StoryBlock
-  | TipBlock;
+  | TipBlock
+  | PromptingChallengeBlock;
 
 export interface Course {
   id: string;
@@ -59,5 +67,5 @@ export interface CourseListItem {
   tier: number;
   xpReward: number;
   estimatedMinutes: number;
-  completed: boolean;
+  completed?: boolean;
 }
