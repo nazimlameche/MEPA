@@ -5,6 +5,7 @@ import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
 import Section from '@/components/layout/Section';
 import LearningPath from '@/components/course/LearningPath';
+import AlKoCorner from '@/components/mascot/AlKoCorner';
 
 interface CourseProgressDto {
   courseId:    string;
@@ -74,6 +75,7 @@ export default async function TheoryModulePage() {
           moduleHref="/modules/theory"
         />
       </Section>
+      <AlKoCorner position="bottom-right" />
     </PageContainer>
   );
 }

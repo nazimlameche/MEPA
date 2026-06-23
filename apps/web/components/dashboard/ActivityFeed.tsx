@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { RecentActivity } from '@/lib/types/dashboard';
 import { CheckCircle, Zap, BookOpen, Sparkles } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -18,6 +19,11 @@ const TYPE_CONFIG: Record<RecentActivity['type'], { icon: LucideIcon; color: str
   course_generated: { icon: Sparkles,    color: 'var(--color-muted)' },
 };
 
+const itemStyle = {
+  base: 'flex items-center gap-3 rounded-lg px-2 py-1 -mx-2 transition-colors duration-150',
+  link: 'hover:bg-[var(--color-surface-card)] cursor-pointer',
+};
+
 export default function ActivityFeed({ activities }: { activities: RecentActivity[] }) {
   return (
     <div
@@ -33,11 +39,12 @@ export default function ActivityFeed({ activities }: { activities: RecentActivit
           Aucune activité pour l&apos;instant. Lance-toi !
         </p>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
           {activities.map(a => {
             const { icon: Icon, color } = TYPE_CONFIG[a.type];
-            return (
-              <div key={a.id} className="flex items-center gap-3">
+
+            const inner = (
+              <>
                 <Icon size={16} style={{ color, flexShrink: 0 }} aria-hidden="true" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate" style={{ color: 'var(--color-ink)' }}>
@@ -50,6 +57,24 @@ export default function ActivityFeed({ activities }: { activities: RecentActivit
                 <span className="text-xs font-semibold flex-shrink-0" style={{ color: 'var(--color-complete)' }}>
                   +{a.xpEarned} XP
                 </span>
+              </>
+            );
+
+            if (a.href) {
+              return (
+                <Link
+                  key={a.id}
+                  href={a.href}
+                  className={`${itemStyle.base} ${itemStyle.link}`}
+                >
+                  {inner}
+                </Link>
+              );
+            }
+
+            return (
+              <div key={a.id} className={itemStyle.base}>
+                {inner}
               </div>
             );
           })}

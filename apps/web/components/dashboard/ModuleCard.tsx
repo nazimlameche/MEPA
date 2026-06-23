@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import type { ModuleSummary } from '@/lib/types/dashboard';
 
 export default function ModuleCard({ mod }: { mod: ModuleSummary }) {
   const inner = (
-    <div
+    <motion.div
       className="p-5 flex flex-col gap-4 h-full"
       style={{
         background:   'var(--color-surface)',
@@ -13,15 +14,13 @@ export default function ModuleCard({ mod }: { mod: ModuleSummary }) {
         borderRadius: '8px',
         opacity:      mod.available ? 1 : 0.55,
         cursor:       mod.available ? 'pointer' : 'default',
-        transition:   'border-color 0.2s ease',
       }}
-      onMouseEnter={e => {
-        if (mod.available)
-          (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-accent)';
-      }}
-      onMouseLeave={e => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-border)';
-      }}
+      whileHover={mod.available ? {
+        y:           -4,
+        borderColor: 'var(--color-accent)',
+        boxShadow:   '0 8px 32px rgba(76,31,212,0.18)',
+      } : {}}
+      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
     >
       <div className="flex items-start justify-between">
         <span
@@ -53,21 +52,23 @@ export default function ModuleCard({ mod }: { mod: ModuleSummary }) {
             <span>{mod.progress}%</span>
           </div>
           <div
-            className="w-full h-1 overflow-hidden"
-            style={{ background: 'var(--color-border)', borderRadius: '2px' }}
+            className="w-full h-1.5 overflow-hidden"
+            style={{ background: 'var(--color-border)', borderRadius: '4px' }}
           >
-            <div
+            <motion.div
               className="h-full"
               style={{
-                width:        `${mod.progress}%`,
                 background:   mod.progress === 100 ? 'var(--color-complete)' : 'var(--color-accent)',
-                borderRadius: '2px',
+                borderRadius: '4px',
               }}
+              initial={{ width: 0 }}
+              animate={{ width: `${mod.progress}%` }}
+              transition={{ duration: 0.9, ease: 'easeOut', delay: 0.2 }}
             />
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 
   if (!mod.available) return inner;

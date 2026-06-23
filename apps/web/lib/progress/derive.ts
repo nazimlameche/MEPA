@@ -102,12 +102,25 @@ export function toRecentActivity(
     const bareId   = item.courseId.replace(/^prompting-/, '').replace(/^custom-/, '');
     const title    = catalogMap.get(item.courseId) ?? catalogMap.get(bareId);
     const fallback = ACTIVITY_LABELS[item.type] ?? 'Activité';
-    return {
+    let href: string | undefined;
+    if (item.type === 'course_completed') {
+      if (item.courseId.startsWith('prompting-'))   href = '/modules/prompting';
+      else if (item.courseId.startsWith('custom-')) href = '/modules/custom-course';
+      else                                          href = `/modules/theory/${item.courseId}`;
+    } else if (item.type === 'prompt_scored') {
+      href = '/modules/prompting';
+    } else if (item.type === 'course_generated') {
+      href = '/modules/custom-course';
+    }
+
+    const activity: RecentActivity = {
       id:        item.id,
       type:      item.type,
       label:     title ? `${fallback} — ${title}` : fallback,
       xpEarned:  item.xpEarned,
       timestamp: item.timestamp,
     };
+    if (href !== undefined) activity.href = href;
+    return activity;
   });
 }

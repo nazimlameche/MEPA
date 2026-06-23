@@ -23,4 +23,5 @@ export interface RecentActivity {
   label: string;
   xpEarned: number;
   timestamp: string;       // ISO string
+  href?: string;           // lien vers l'activité (optionnel)
 }

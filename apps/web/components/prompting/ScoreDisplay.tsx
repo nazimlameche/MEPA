@@ -1,4 +1,9 @@
+'use client';
+
+import { motion } from 'framer-motion';
 import type { PromptScoreOutput } from '@/lib/types/prompting';
+import AlKo from '@/components/mascot/AlKo';
+import type { AlKoVariant } from '@/components/mascot/AlKo';
 
 interface ScoreDisplayProps {
   result: PromptScoreOutput;
@@ -10,6 +15,15 @@ const STEP_CONFIG = [
   { key: 'output_format' as const, label: 'Format de sortie', max: 34 },
 ];
 
+type AlKoExpression = 'thumbsUp' | 'grimace' | 'lol' | 'cool';
+
+function getAlKoReaction(score: number): { variant: AlKoVariant; expression: AlKoExpression } {
+  if (score > 90)  return { variant: 'wave',      expression: 'cool'     }; // 😎
+  if (score === 67) return { variant: 'celebrate', expression: 'lol'      }; // 😂
+  if (score > 50)  return { variant: 'wave',      expression: 'thumbsUp' }; // 👍
+  return             { variant: 'sad',       expression: 'grimace'  }; // 😬
+}
+
 function scoreColor(score: number, max: number): string {
   const pct = score / max;
   if (pct === 1)  return 'var(--color-complete)';
@@ -19,6 +33,7 @@ function scoreColor(score: number, max: number): string {
 
 export default function ScoreDisplay({ result }: ScoreDisplayProps) {
   const { total_score, passed, steps, global_feedback } = result;
+  const { variant: alkoVariant, expression: alkoExpr } = getAlKoReaction(total_score);
 
   return (
     <div className="flex flex-col gap-4">
@@ -58,7 +73,7 @@ export default function ScoreDisplay({ result }: ScoreDisplayProps) {
           </span>
         </div>
 
-        <div>
+        <div className="flex-1">
           <p className="font-semibold mb-1" style={{ color: 'var(--color-ink)', fontSize: '1.05rem' }}>
             {passed ? 'Prompt parfait.' : `Score : ${total_score} / 100`}
           </p>
@@ -66,6 +81,22 @@ export default function ScoreDisplay({ result }: ScoreDisplayProps) {
             {global_feedback}
           </p>
         </div>
+
+        {/* Al-Ko réaction */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.6, x: 20 }}
+          animate={{ opacity: 1, scale: 1, x: 0 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.3 }}
+          className="flex-shrink-0"
+        >
+          <AlKo
+            variant={alkoVariant}
+            expression={alkoExpr}
+            size={80}
+            hideBubble
+            hideName
+          />
+        </motion.div>
       </div>
 
       {/* Détail des 3 étapes */}

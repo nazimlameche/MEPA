@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ChevronRight, Zap } from 'lucide-react';
 import { mockExercises } from '@/lib/mock/prompting-data';
+import AlKoCorner from '@/components/mascot/AlKoCorner';
 import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
 import Section from '@/components/layout/Section';
@@ -136,6 +137,7 @@ export default function PromptingModulePage() {
           })}
         </div>
       </Section>
+      <AlKoCorner position="bottom-right" />
     </PageContainer>
   );
 }

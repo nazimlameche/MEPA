@@ -9,6 +9,9 @@ import { toast } from 'sonner';
 import { apiClient } from '@/lib/api-client';
 import { revalidateProgress } from '@/app/actions/revalidate';
 import BlockRenderer from '@/components/course/BlockRenderer';
+import AlKo from '@/components/mascot/AlKo';
+import { sounds } from '@/lib/sounds';
+import { COMPLETION_MESSAGES } from '@/lib/completion-messages';
 import type { ParcoursChapter } from '@/lib/types/custom-course';
 
 interface ChapterReaderProps {
@@ -26,6 +29,9 @@ export default function ChapterReader({ chapter, parcoursId }: ChapterReaderProp
   const [completed, setCompleted]        = useState(chapter.status === 'completed');
   const [xpEarned, setXpEarned]          = useState(chapter.xpEarned);
   const [score, setScore]                = useState({ correct: 0, total: 0 });
+  const [completionMsg]                  = useState(
+    () => COMPLETION_MESSAGES[Math.floor(Math.random() * COMPLETION_MESSAGES.length)],
+  );
 
   const block         = blocks[currentBlock];
   const isLast        = currentBlock === blocks.length - 1;
@@ -66,6 +72,7 @@ export default function ChapterReader({ chapter, parcoursId }: ChapterReaderProp
   if (completed) {
     return (
       <div className="flex flex-col items-center text-center gap-6 py-16 max-w-sm mx-auto">
+        <AlKo variant="celebrate" size={130} bubble={completionMsg} hideName />
         <h1 style={{ fontSize: '1.6rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
           Chapitre terminé !
         </h1>
@@ -98,6 +105,7 @@ export default function ChapterReader({ chapter, parcoursId }: ChapterReaderProp
           style={{ background: 'var(--color-primary)', color: '#fff', borderRadius: '8px' }}
           onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-primary-light)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'var(--color-primary)')}
+          onClick={() => sounds.click()}
         >
           Retour au parcours
         </Link>
@@ -165,7 +173,7 @@ export default function ChapterReader({ chapter, parcoursId }: ChapterReaderProp
       {/* Continue button */}
       <div className="flex justify-end pb-8">
         <button
-          onClick={() => { void goNext(); }}
+          onClick={() => { if (canContinue) sounds.click(); void goNext(); }}
           disabled={!canContinue}
           className="px-7 py-3 font-semibold text-sm transition-colors duration-150"
           style={{

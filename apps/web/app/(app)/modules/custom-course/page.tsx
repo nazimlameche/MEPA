@@ -8,6 +8,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import Section from '@/components/layout/Section';
 import ParcoursDashboard from '@/components/custom-course/ParcoursDashboard';
 import NewParcoursFlow from '@/components/custom-course/NewParcoursFlow';
+import AlKoCorner from '@/components/mascot/AlKoCorner';
 
 function timeAgo(iso: string): string {
   const diff  = Date.now() - new Date(iso).getTime();
@@ -85,6 +86,7 @@ export default async function CustomCoursePage() {
           </div>
         </Section>
       )}
+      <AlKoCorner position="bottom-right" />
     </PageContainer>
   );
 }

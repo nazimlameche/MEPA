@@ -16,9 +16,9 @@ import StatCard from '@/components/dashboard/StatCard';
 import ModuleCard from '@/components/dashboard/ModuleCard';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import PageContainer from '@/components/layout/PageContainer';
-import PageHeader from '@/components/layout/PageHeader';
 import Section from '@/components/layout/Section';
 import type { UserProgress, ModuleSummary } from '@/lib/types/dashboard';
+import AlKoGreeting from '@/components/mascot/AlKoGreeting';
 
 export default async function DashboardPage() {
   const session   = await auth();
@@ -53,10 +53,17 @@ export default async function DashboardPage() {
 
   return (
     <PageContainer size="wide">
-      <PageHeader
-        title={`Bonjour, ${firstName}`}
-        subtitle={`Continue ta progression — tu es à ${progress.xpToNextLevel - progress.xp} XP du niveau ${progress.level + 1}.`}
-      />
+      <header className="mb-8" style={{ overflow: 'visible' }}>
+        <div className="flex items-center gap-3 flex-wrap" style={{ overflow: 'visible' }}>
+          <h1 style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 600, lineHeight: 1.2 }}>
+            Bonjour, {firstName} !
+          </h1>
+          <div style={{ marginTop: 30 }}><AlKoGreeting /></div>
+        </div>
+        <p style={{ color: 'var(--color-body)', fontSize: '0.97rem', maxWidth: '56ch', marginTop: 6 }}>
+          Continue ta progression — tu es à {progress.xpToNextLevel - progress.xp} XP du niveau {progress.level + 1}.
+        </p>
+      </header>
 
       <Section>
         <XPBar xp={progress.xp} xpToNextLevel={progress.xpToNextLevel} level={progress.level} />

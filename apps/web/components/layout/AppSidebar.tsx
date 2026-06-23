@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, BookOpen, PenLine, Sparkles, FlaskConical, User, LogOut } from 'lucide-react';
 import { signOut } from 'next-auth/react';
+import AlKo from '@/components/mascot/AlKo';
 
 const NAV_ITEMS = [
   { href: '/dashboard',             icon: LayoutDashboard, label: 'Dashboard' },
@@ -24,14 +25,17 @@ export default function AppSidebar() {
         borderRight: '1px solid var(--color-border)',
       }}
     >
-      {/* Logo */}
-      <Link
-        href="/dashboard"
-        className="text-xl font-semibold px-3 mb-8 block"
-        style={{ fontFamily: 'var(--font-display)', color: 'var(--color-accent)' }}
-      >
-        AI·Edu
-      </Link>
+      {/* Logo + Al-Ko miniature */}
+      <div className="flex items-center gap-1 px-3 mb-8" style={{ overflow: 'visible' }}>
+        <Link
+          href="/dashboard"
+          className="text-xl font-semibold"
+          style={{ fontFamily: 'var(--font-display)', color: 'var(--color-accent)' }}
+        >
+          AI·Edu
+        </Link>
+        <AlKo variant="wave" size={36} hideBubble hideName armWave />
+      </div>
 
       {/* Navigation */}
       <nav className="flex flex-col gap-0.5 flex-1">

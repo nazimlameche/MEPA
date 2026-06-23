@@ -1,5 +1,6 @@
 import ModerationBanner from '@/components/sandbox/ModerationBanner';
 import ChatWindow from '@/components/sandbox/ChatWindow';
+import AlKoCorner from '@/components/mascot/AlKoCorner';
 
 export default function SandboxPage() {
   return (
@@ -12,6 +13,7 @@ export default function SandboxPage() {
       </div>
       <ModerationBanner />
       <ChatWindow />
+      <AlKoCorner position="bottom-right" delay={1000} />
     </div>
   );
 }

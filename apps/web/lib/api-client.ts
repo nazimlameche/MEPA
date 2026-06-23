@@ -28,7 +28,11 @@ async function request<T>(
     throw new Error(error.message ?? `HTTP ${res.status}`);
   }
 
-  return res.json() as Promise<T>;
+  // 204 No Content ou body vide (ex: DELETE) → pas de JSON à parser
+  if (res.status === 204) return undefined as T;
+  const text = await res.text();
+  if (!text) return undefined as T;
+  return JSON.parse(text) as T;
 }
 
 function withToken(token: string | undefined): Pick<FetchOptions, 'token'> {

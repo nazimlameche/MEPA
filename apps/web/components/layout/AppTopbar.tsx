@@ -27,7 +27,7 @@ export default function AppTopbar({ streak, xp, level, userName }: AppTopbarProp
         </span>
       )}
 
-      <span className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--color-complete)' }}>
+      <span id="xp-counter" className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--color-complete)' }}>
         <Zap size={14} aria-hidden="true" />
         <span className="font-semibold">{xp} XP</span>
       </span>

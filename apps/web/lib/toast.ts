@@ -22,4 +22,31 @@ export const notify = {
   info: {
     loading: (msg = 'Chargement…') => toast.loading(msg),
   },
+  xp: {
+    /** Toast "+N XP !" affiché après une bonne réponse */
+    gained: (amount: number) => toast(`+${amount} XP !`, {
+      description: amount >= 100 ? '🔥 Excellent travail !' : 'Continue comme ça !',
+      duration:    2500,
+      style: {
+        background:  'rgba(16,185,129,0.15)',
+        border:      '1px solid rgba(16,185,129,0.3)',
+        color:       '#10B981',
+        fontWeight:  '600',
+      },
+    }),
+    levelUp: (level: number) => toast(`⬆️ Niveau ${level} atteint !`, {
+      description: 'Tu progresses vite, bravo !',
+      duration:    4000,
+      style: {
+        background:  'rgba(76,31,212,0.2)',
+        border:      '1px solid rgba(123,82,240,0.4)',
+        color:       '#7B52F0',
+        fontWeight:  '700',
+      },
+    }),
+    streakBonus: (days: number) => toast(`🔥 ${days} jours de suite !`, {
+      description: 'Bonus de streak appliqué.',
+      duration:    3000,
+    }),
+  },
 };

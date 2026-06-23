@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { StoryBlock } from '@/lib/types/course';
+import { sounds } from '@/lib/sounds';
 
 export default function StoryBlockComponent({ block }: { block: StoryBlock }) {
   const [showMoral, setShowMoral] = useState(false);
@@ -33,7 +34,7 @@ export default function StoryBlockComponent({ block }: { block: StoryBlock }) {
 
       {!showMoral ? (
         <button
-          onClick={() => setShowMoral(true)}
+          onClick={() => { sounds.correct(); setShowMoral(true); }}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
           className="text-sm font-medium px-4 py-2 transition-colors duration-200"
