@@ -6,7 +6,7 @@
     "build": "nest build",
     "dev": "nest start --watch",
     "start": "node dist/main",
-    "lint": "eslint src/ --ext .ts",
+
     "test": "jest",
     "type-check": "tsc --noEmit",
     "db:migrate": "node --env-file=.env scripts/run-migrations.mjs"
