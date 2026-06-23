@@ -27,6 +27,7 @@
       "outputs": ["coverage/**"]
     },
     "type-check": {
+      "dependsOn": ["^build"],
       "outputs": []
     },
     "db:migrate": {
