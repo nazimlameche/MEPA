@@ -8,20 +8,17 @@ import { toast } from 'sonner';
 import { apiClient } from '@/lib/api-client';
 import type { ParcoursLevel, Parcours } from '@/lib/types/custom-course';
 
-const LEVELS: { value: ParcoursLevel; label: string }[] = [
-  { value: 'college', label: 'Collégien' },
-  { value: 'lycee',   label: 'Lycéen'   },
-  { value: 'adulte',  label: 'Adulte'   },
-];
+interface ThemeFormProps {
+  defaultLevel: ParcoursLevel;
+}
 
-export default function ThemeForm() {
-  const router           = useRouter();
+export default function ThemeForm({ defaultLevel }: ThemeFormProps) {
+  const router            = useRouter();
   const { data: session } = useSession();
   const [theme, setTheme] = useState('');
-  const [level, setLevel] = useState<ParcoursLevel | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const canSubmit = theme.trim().length >= 2 && level !== null;
+  const canSubmit = theme.trim().length >= 2;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +31,7 @@ export default function ThemeForm() {
     try {
       const parcours = await apiClient.post<Parcours>(
         '/custom-course/parcours',
-        { theme: theme.trim(), level },
+        { theme: theme.trim(), level: defaultLevel },
         token,
       );
       router.push(`/modules/custom-course/${parcours.id}`);
@@ -75,33 +72,6 @@ export default function ThemeForm() {
         <p className="mt-1 text-xs" style={{ color: 'var(--color-text-muted)' }}>
           {theme.length}/100
         </p>
-      </div>
-
-      <div>
-        <p className="mb-2 text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-          Ton niveau
-        </p>
-        <div className="flex gap-2">
-          {LEVELS.map(({ value, label }) => {
-            const selected = level === value;
-            return (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setLevel(value)}
-                className="flex-1 py-2.5 text-sm font-medium transition-all duration-200"
-                style={{
-                  background:   selected ? 'var(--color-primary)' : 'transparent',
-                  color:        selected ? '#fff' : 'var(--color-text-secondary)',
-                  border:       `1px solid ${selected ? 'var(--color-primary)' : 'var(--color-surface-border)'}`,
-                  borderRadius: '8px',
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       <button

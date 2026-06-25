@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { apiClient } from '@/lib/api-client';
-import type { Parcours } from '@/lib/types/custom-course';
+import type { Parcours, ParcoursLevel } from '@/lib/types/custom-course';
 import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
 import Section from '@/components/layout/Section';
@@ -17,10 +17,18 @@ function timeAgo(iso: string): string {
   return `il y a ${Math.floor(hours / 24)}j`;
 }
 
+function roleToParcoursLevel(role: string | undefined | null): ParcoursLevel {
+  if (role === 'collegien') return 'college';
+  if (role === 'lyceen')    return 'lycee';
+  return 'adulte';
+}
+
 export default async function CustomCoursePage() {
   const session = await auth();
   const token   = session?.accessToken;
   if (!token) redirect('/login');
+
+  const defaultLevel = roleToParcoursLevel(session.user?.role);
 
   let parcourslist: Parcours[] = [];
   try {
@@ -37,7 +45,7 @@ export default async function CustomCoursePage() {
           subtitle="Choisis un thème et découvre l'IA à travers ce qui te passionne."
         />
         <Section>
-          <NewParcoursFlow />
+          <NewParcoursFlow defaultLevel={defaultLevel} />
         </Section>
       </PageContainer>
     );

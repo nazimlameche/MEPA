@@ -1,22 +1,63 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronRight, Zap } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { mockExercises } from '@/lib/mock/prompting-data';
 import AlKoCorner from '@/components/mascot/AlKoCorner';
 import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
 import Section from '@/components/layout/Section';
+import type { PromptExercise } from '@/lib/types/prompting';
 
 const DIFFICULTY_CONFIG = {
-  facile:    { label: 'Facile',     color: 'var(--color-complete)', bg: 'var(--color-complete-soft)' },
-  moyen:     { label: 'Moyen',      color: 'var(--color-streak)',   bg: 'var(--color-streak-soft)' },
-  difficile: { label: 'Difficile',  color: 'var(--color-error)',    bg: 'var(--color-error-soft)' },
+  facile:    { label: 'Facile',    color: 'var(--color-complete)', bg: 'var(--color-complete-soft)' },
+  moyen:     { label: 'Moyen',     color: 'var(--color-streak)',   bg: 'var(--color-streak-soft)'   },
+  difficile: { label: 'Difficile', color: 'var(--color-error)',    bg: 'var(--color-error-soft)'    },
 } as const;
 
+interface AttemptSummary {
+  exerciseId: string;
+  totalScore: number;
+  passed:     boolean;
+}
+
 export default function PromptingModulePage() {
-  const completed = mockExercises.filter(e => e.completed).length;
-  const total     = mockExercises.length;
+  const { data: session }         = useSession();
+  const [exercises, setExercises] = useState<PromptExercise[]>(mockExercises);
+
+  useEffect(() => {
+    const token = session?.accessToken;
+    if (!token) return;
+
+    fetch(`${process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001'}/api/prompting/attempts`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then((attempts: AttemptSummary[] | null) => {
+        if (!attempts?.length) return;
+
+        const bestScoreMap = new Map<string, number>();
+        const passedSet    = new Set<string>();
+
+        for (const a of attempts) {
+          if (a.passed) passedSet.add(a.exerciseId);
+          const cur = bestScoreMap.get(a.exerciseId) ?? 0;
+          if (a.totalScore > cur) bestScoreMap.set(a.exerciseId, a.totalScore);
+        }
+
+        setExercises(mockExercises.map(ex => ({
+          ...ex,
+          completed: passedSet.has(ex.id),
+          bestScore: bestScoreMap.get(ex.id) ?? ex.bestScore,
+        })));
+      })
+      .catch(() => { /* garde les données mock en cas d'erreur */ });
+  }, [session?.accessToken]);
+
+  const completed = exercises.filter(e => e.completed).length;
+  const total     = exercises.length;
   const pct       = Math.round((completed / total) * 100);
 
   const progressBar = (
@@ -62,13 +103,13 @@ export default function PromptingModulePage() {
         >
           <p className="text-sm leading-relaxed" style={{ color: 'var(--color-body)' }}>
             On te donne un sujet. Tu rédiges le meilleur prompt possible pour demander à une IA de t&apos;aider.
-            L&apos;IA évalue ton prompt sur 3 critères : structure, absence de données personnelles, et format de sortie.
-            Réessaie jusqu&apos;au score parfait de 100/100.
+            L&apos;IA évalue ton prompt sur 4 critères : clarté de l&apos;objectif, contexte, format de sortie, et sécurité des données.
+            Réessaie jusqu&apos;au score de 90/100 ou plus.
           </p>
         </div>
 
         <div className="flex flex-col gap-3">
-          {mockExercises.map(exercise => {
+          {exercises.map(exercise => {
             const diff = DIFFICULTY_CONFIG[exercise.difficulty];
 
             return (
