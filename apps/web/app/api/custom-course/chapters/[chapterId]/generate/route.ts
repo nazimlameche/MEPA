@@ -25,34 +25,47 @@ const GeneratedChapterSchema = z.object({
 
 type GeneratedChapterContent = z.infer<typeof GeneratedChapterSchema>;
 
-// ─── Anonymisation CNIL ─────────────────────────────────────────────────────
-// CNIL: le thème brut n'est jamais envoyé à Mistral — on l'anonymise en catégorie
-function anonymizeInterest(interest: string): string {
-  const lower = interest.toLowerCase().trim();
-  const categories: [RegExp, string][] = [
-    [/foot|soccer|rugby|basket|tennis|sport|athl/i,    'un sport populaire'],
-    [/manga|anime|dessin|bd|comic/i,                   "une forme d'art visuel japonais ou occidental"],
-    [/music|chant|guitare|piano|rap|hip.?hop|jazz/i,   'la musique et ses pratiques'],
-    [/jeu|gaming|video.?game|minecraft|fortnite/i,     'les jeux vidéo'],
-    [/cuisine|recette|gastronomie|pâtisserie/i,        "l'art culinaire"],
-    [/voyage|pays|géographie|culture/i,                'les voyages et la géographie'],
-    [/science|physique|chimie|biologie|espace/i,       'les sciences naturelles'],
-    [/histoire|guerre|empire|civilisation/i,           "l'histoire et les civilisations"],
-    [/code|programm|informatique|robot/i,              "l'informatique et la programmation"],
-    [/film|cinéma|série|netflix/i,                     'le cinéma et les séries'],
-    [/animal|chien|chat|nature|écologie/i,             'la nature et les animaux'],
-    [/mode|vêtement|style|fashion/i,                   'la mode et le style'],
-  ];
-  for (const [pattern, category] of categories) {
-    if (pattern.test(lower)) return category;
-  }
-  return 'un domaine de connaissance populaire';
+// ─── Sanitisation CNIL ──────────────────────────────────────────────────────
+// CNIL: les centres d'intérêt généraux (sport, musique…) ne sont pas des PII —
+// seules les données identifiantes (âge exact, prénom, école, adresse) sont retirées.
+function sanitizeTheme(theme: string): string {
+  const sanitized = theme
+    .replace(/\b\d{1,2}\s*ans\b/gi, '')                                              // CNIL: âge exact
+    .replace(/\b(je\s+m['']appelle|mon\s+prénom\s+est?|appelle[-\s]moi)\s+\S+/gi, '') // CNIL: prénom
+    .replace(/\b(mon|ma|notre)\s+(école|lycée|collège|classe|prof|professeur)\b/gi, 'mon établissement') // CNIL: école
+    .replace(/\b(rue|avenue|boulevard|impasse|allée)\s+[^\s,]+/gi, '')               // CNIL: adresse
+    .trim();
+  return sanitized || 'un sujet de ton choix';
 }
 
 const LEVEL_LABEL: Record<string, string> = {
   college: 'collégiens (11-15 ans)',
   lycee:   'lycéens (15-18 ans)',
   adulte:  'adultes',
+};
+
+// ─── Directives pédagogiques par chapitre ───────────────────────────────────
+// Ancre chaque chapitre sur l'angle IA explicite — évite la dérive vers un cours
+// générique sur le thème (sécurité des données en général, écologie, etc.).
+const CHAPTER_IA_DIRECTIVES: Record<string, string> = {
+  'comprendre-ia':
+    "Explique ce qu'est l'intelligence artificielle : comment elle apprend (données, modèles), " +
+    "comment elle est utilisée au quotidien, et illustre avec des exemples concrets dans le domaine « ${theme} ».",
+  'bon-prompting':
+    "Explique comment rédiger un bon prompt à destination d'une IA : contexte, clarté, format attendu, itération. " +
+    "Utilise des mises en situation dans le domaine « ${theme} » (ex : demander à une IA d'analyser une performance, générer un plan d'entraînement…).",
+  'securite':
+    "Explique les risques liés à l'usage des IA pour la vie privée : quelles données les IA collectent et retiennent, " +
+    "comment les protéger, pourquoi ne jamais partager de données personnelles dans un prompt. " +
+    "Illustre avec des cas concrets dans le domaine « ${theme} ».",
+  'impact-environnemental':
+    "Explique l'empreinte carbone et énergétique de l'IA : coût de l'entraînement des grands modèles, " +
+    "consommation des datacenters, bilan par requête. " +
+    "Illustre avec des exemples dans le domaine « ${theme} » pour rendre les ordres de grandeur concrets.",
+  'ethique':
+    "Explique les enjeux éthiques propres à l'IA : biais algorithmiques, hallucinations, décisions automatisées, " +
+    "droits d'auteur, impact sur l'emploi, responsabilité. " +
+    "Illustre avec des exemples dans le domaine « ${theme} ».",
 };
 
 // ─── Prompts Mistral ─────────────────────────────────────────────────────────
@@ -79,14 +92,25 @@ Retourne UNIQUEMENT un JSON valide sans markdown :
 }`;
 }
 
-function buildChapterPrompt(theme: string, chapterTitle: string, levelLabel: string): string {
-  return `Génère le chapitre "${chapterTitle}" pour un élève qui s'intéresse à : ${theme}
-Entre 5 et 7 blocs variés, terminé par un quiz.
-Types disponibles : text, story, quiz, fill_blank, tip
-Règles :
+function buildChapterPrompt(
+  theme: string,
+  chapterTitle: string,
+  levelLabel: string,
+  iaDirective: string,
+): string {
+  return `Tu génères un chapitre de cours sur l'IA pour des ${levelLabel} qui s'intéressent à : ${theme}
+
+Objectif pédagogique du chapitre "${chapterTitle}" :
+${iaDirective}
+
+Contraintes absolues :
+- Chaque bloc doit traiter l'IA, pas uniquement le thème ${theme} de façon isolée
+- Les exemples et anecdotes doivent toujours relier l'IA au domaine "${theme}"
 - Langage adapté à des ${levelLabel}
-- Utilise des exemples concrets liés à "${theme}" pour illustrer chaque concept
 - Jamais de données personnelles dans le contenu
+- Entre 5 et 7 blocs variés, le dernier doit être un quiz sur l'IA
+
+Types de blocs disponibles : text, story, quiz, fill_blank, tip
 Format JSON strict (snake_case uniquement — correct_index PAS correctIndex) :
 {
   "title": "...",
@@ -170,17 +194,23 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
   const theme      = chapter.parcours?.theme   ?? 'général';
   const level      = chapter.parcours?.level   ?? 'college';
   const levelLabel = LEVEL_LABEL[level]        ?? 'élèves';
-  // CNIL: anonymisation du thème avant injection dans le prompt
-  const anonTheme  = anonymizeInterest(theme);
+  // CNIL: retire uniquement les données identifiantes (âge, prénom, école, adresse)
+  const safeTheme  = sanitizeTheme(theme);
 
   const isAtelier = chapter.chapterKey === 'atelier-prompting';
+
+  const rawDirective = CHAPTER_IA_DIRECTIVES[chapter.chapterKey] ?? CHAPTER_IA_DIRECTIVES['comprendre-ia'];
+  const iaDirective  = rawDirective.replace(/\$\{theme\}/g, safeTheme);
+
   const systemPrompt = isAtelier
     ? 'Tu es un concepteur pédagogique spécialisé dans l\'éducation numérique pour des professeurs et élèves.'
-    : 'Tu es un professeur expert en intelligence artificielle, spécialisé dans l\'enseignement aux collégiens et lycéens. Génère un chapitre de cours sur l\'IA, personnalisé selon les intérêts de l\'élève. Règles strictes : contenu adapté au niveau indiqué, exemples liés au thème, jamais de données personnelles, répondre UNIQUEMENT en JSON valide.';
+    : 'Tu es un professeur expert en intelligence artificielle. Tu génères des chapitres de cours sur l\'IA adaptés aux jeunes. Chaque bloc de contenu doit traiter l\'IA — pas uniquement le thème de l\'élève. Réponds UNIQUEMENT en JSON valide.';
 
   const userPrompt = isAtelier
-    ? buildAtelierPrompt(anonTheme, levelLabel)
-    : buildChapterPrompt(anonTheme, chapter.title, levelLabel);
+    ? buildAtelierPrompt(safeTheme, levelLabel)
+    : buildChapterPrompt(safeTheme, chapter.title, levelLabel, iaDirective);
+
+  console.log(`[generate-chapter] theme="${theme}" → safeTheme="${safeTheme}" | key=${chapter.chapterKey} | level=${level}`);
 
   let content: GeneratedChapterContent;
   try {
