@@ -9,31 +9,43 @@ interface ScoreDisplayProps {
   result: PromptScoreOutput;
 }
 
-const STEP_CONFIG = [
-  { key: 'structure'     as const, label: 'Structure',       max: 33 },
-  { key: 'pii_check'    as const, label: 'Données perso',   max: 33 },
-  { key: 'output_format' as const, label: 'Format de sortie', max: 34 },
+const CRITERION_CONFIG: {
+  key:   keyof Omit<PromptScoreOutput, 'total_score' | 'global_feedback' | 'passed'>;
+  label: string;
+  max:   number;
+}[] = [
+  { key: 'clarté_objectif',  label: 'Clarté de l\'objectif', max: 25 },
+  { key: 'contexte',         label: 'Contexte',              max: 25 },
+  { key: 'format_sortie',    label: 'Format de sortie',      max: 25 },
+  { key: 'sécurité_données', label: 'Sécurité des données',  max: 25 },
 ];
 
 type AlKoExpression = 'thumbsUp' | 'grimace' | 'lol' | 'cool';
 
 function getAlKoReaction(score: number): { variant: AlKoVariant; expression: AlKoExpression } {
-  if (score > 90)  return { variant: 'wave',      expression: 'cool'     }; // 😎
-  if (score === 67) return { variant: 'celebrate', expression: 'lol'      }; // 😂
-  if (score > 50)  return { variant: 'wave',      expression: 'thumbsUp' }; // 👍
-  return             { variant: 'sad',       expression: 'grimace'  }; // 😬
+  if (score >= 90) return { variant: 'wave',      expression: 'cool'     };
+  if (score === 67) return { variant: 'celebrate', expression: 'lol'      };
+  if (score >= 50) return { variant: 'wave',      expression: 'thumbsUp' };
+  return            { variant: 'sad',       expression: 'grimace'  };
 }
 
-function scoreColor(score: number, max: number): string {
+function criterionColor(score: number, max: number): string {
   const pct = score / max;
   if (pct === 1)  return 'var(--color-complete)';
   if (pct >= 0.5) return 'var(--color-streak)';
   return 'var(--color-error)';
 }
 
+function totalScoreColor(score: number): string {
+  if (score >= 90) return 'var(--color-complete)';
+  if (score >= 50) return 'var(--color-streak)';
+  return 'var(--color-error)';
+}
+
 export default function ScoreDisplay({ result }: ScoreDisplayProps) {
-  const { total_score, passed, steps, global_feedback } = result;
+  const { total_score, passed, global_feedback } = result;
   const { variant: alkoVariant, expression: alkoExpr } = getAlKoReaction(total_score);
+  const ringColor = totalScoreColor(total_score);
 
   return (
     <div className="flex flex-col gap-4">
@@ -47,14 +59,14 @@ export default function ScoreDisplay({ result }: ScoreDisplayProps) {
           borderRadius: '8px',
         }}
       >
-        {/* Anneau */}
+        {/* Anneau SVG */}
         <div className="relative flex-shrink-0 w-20 h-20">
           <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90" aria-hidden="true">
             <circle cx="40" cy="40" r="32" fill="none" stroke="var(--color-border)" strokeWidth="8" />
             <circle
               cx="40" cy="40" r="32"
               fill="none"
-              stroke={passed ? 'var(--color-complete)' : total_score >= 50 ? 'var(--color-streak)' : 'var(--color-error)'}
+              stroke={ringColor}
               strokeWidth="8"
               strokeLinecap="round"
               strokeDasharray={`${(total_score / 100) * 201} 201`}
@@ -63,10 +75,7 @@ export default function ScoreDisplay({ result }: ScoreDisplayProps) {
           </svg>
           <span
             className="absolute inset-0 flex items-center justify-center font-semibold"
-            style={{
-              fontSize: '1.25rem',
-              color:    passed ? 'var(--color-complete)' : 'var(--color-ink)',
-            }}
+            style={{ fontSize: '1.25rem', color: ringColor }}
             aria-label={`Score : ${total_score} sur 100`}
           >
             {total_score}
@@ -89,22 +98,18 @@ export default function ScoreDisplay({ result }: ScoreDisplayProps) {
           transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.3 }}
           className="flex-shrink-0"
         >
-          <AlKo
-            variant={alkoVariant}
-            expression={alkoExpr}
-            size={80}
-            hideBubble
-            hideName
-          />
+          <AlKo variant={alkoVariant} expression={alkoExpr} size={80} hideBubble hideName />
         </motion.div>
       </div>
 
-      {/* Détail des 3 étapes */}
+      {/* Détail des 4 critères */}
       <div className="flex flex-col gap-3">
-        {STEP_CONFIG.map(({ key, label, max }) => {
-          const step  = steps[key];
-          const color = scoreColor(step.score, max);
-          const pii   = key === 'pii_check' ? steps.pii_check : null;
+        {CRITERION_CONFIG.map(({ key, label, max }) => {
+          const criterion = result[key];
+          const color     = criterionColor(criterion.score, max);
+          const piiFound = 'pii_found' in criterion
+            ? (criterion as { score: number; feedback: string; pii_found: string[] }).pii_found
+            : null;
 
           return (
             <div
@@ -114,7 +119,7 @@ export default function ScoreDisplay({ result }: ScoreDisplayProps) {
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold" style={{ color: 'var(--color-ink)' }}>{label}</span>
-                <span className="text-sm font-semibold" style={{ color }}>{step.score} / {max}</span>
+                <span className="text-sm font-semibold" style={{ color }}>{criterion.score} / {max}</span>
               </div>
 
               <div
@@ -123,15 +128,15 @@ export default function ScoreDisplay({ result }: ScoreDisplayProps) {
               >
                 <div
                   className="h-full"
-                  style={{ width: `${(step.score / max) * 100}%`, background: color, borderRadius: '2px' }}
+                  style={{ width: `${(criterion.score / max) * 100}%`, background: color, borderRadius: '2px' }}
                 />
               </div>
 
-              <p className="text-sm" style={{ color: 'var(--color-body)' }}>{step.feedback}</p>
+              <p className="text-sm" style={{ color: 'var(--color-body)' }}>{criterion.feedback}</p>
 
-              {pii && pii.pii_found.length > 0 && (
+              {piiFound && piiFound.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {pii.pii_found.map((item, i) => (
+                  {piiFound.map((item, i) => (
                     <span
                       key={i}
                       className="px-2 py-0.5 text-xs font-medium"
@@ -146,17 +151,6 @@ export default function ScoreDisplay({ result }: ScoreDisplayProps) {
                     </span>
                   ))}
                 </div>
-              )}
-
-              {'suggestions' in step && step.suggestions.length > 0 && (
-                <ul className="mt-2 flex flex-col gap-1">
-                  {step.suggestions.map((s, i) => (
-                    <li key={i} className="text-xs flex items-start gap-1.5" style={{ color: 'var(--color-muted)' }}>
-                      <span className="mt-0.5 flex-shrink-0" aria-hidden="true">→</span>
-                      {s}
-                    </li>
-                  ))}
-                </ul>
               )}
             </div>
           );

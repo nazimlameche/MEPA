@@ -1,6 +1,8 @@
 import { auth } from '@/lib/auth';
 import { mockModules } from '@/lib/mock/dashboard-data';
-import { mockCourseList } from '@/lib/mock/theory-data';
+import type { CourseListItem } from '@/lib/types/course';
+// TODO: brancher sur les données custom-course BDD
+const mockCourseList: CourseListItem[] = [];
 import { apiClient } from '@/lib/api-client';
 import {
   EMPTY_PROGRESS,

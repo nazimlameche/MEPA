@@ -121,7 +121,31 @@ Format JSON strict (snake_case uniquement — correct_index PAS correctIndex) :
     { "type": "fill_blank", "sentence": "...", "blank_word": "...", "hint": "..." },
     { "type": "tip", "content": "..." }
   ]
-}`;
+}
+
+CONTRAINTES DE FORMAT POUR LES BLOCS :
+
+Bloc "text" — Le champ "content" DOIT être du texte brut uniquement.
+N'utilise JAMAIS de syntaxe markdown dans "content" :
+- Pas de # ou ## pour les titres
+- Pas de ** pour le gras
+- Pas de _ ou * pour l'italique
+- Pas de - ou * en début de ligne pour les listes
+- Pas de > pour les citations
+- Pas de backticks pour le code
+Utilise des paragraphes séparés par des sauts de ligne simples. Le rendu est géré par l'interface.
+
+Bloc "story" — CONTRAINTES NARRATIVES OBLIGATOIRES :
+Le champ "narrative" doit raconter une scène de vie réelle avec un arc narratif en 4 temps :
+1. SITUATION : contexte précis du personnage (lieu, moment, action en cours)
+2. DÉCLENCHEUR : événement ou question concrète qui amène le personnage à réfléchir
+3. RÉFLEXION : étapes de pensée du personnage — ce qu'il/elle observe, ce qui l'étonne, ce qu'il/elle teste
+4. CONSTAT : conclusion à laquelle il/elle arrive, en lien direct avec les étapes précédentes
+Interdit : écrire "X se rend compte que..." sans avoir montré le déclencheur et la réflexion.
+Longueur minimale du champ "narrative" : 120 mots.
+Les champs "narrative" et "moral" doivent aussi être du texte brut (pas de markdown).
+Exemple de MAUVAISE narrative : "Léa se rend compte que l'IA n'a pas d'émotions."
+Exemple de BONNE narrative : "Léa demande à l'IA si elle est heureuse d'avoir bien répondu. L'IA lui répond avec enthousiasme. Léa repose la même question en changeant un mot. La réponse change complètement. Léa essaie encore, et encore. Elle comprend que l'IA adapte ses mots au contexte, mais qu'aucune réponse ne vient d'un ressenti réel — juste d'un calcul de probabilité."`;
 }
 
 interface MistralResponse {
@@ -203,8 +227,8 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
   const iaDirective  = rawDirective.replace(/\$\{theme\}/g, safeTheme);
 
   const systemPrompt = isAtelier
-    ? 'Tu es un concepteur pédagogique spécialisé dans l\'éducation numérique pour des professeurs et élèves.'
-    : 'Tu es un professeur expert en intelligence artificielle. Tu génères des chapitres de cours sur l\'IA adaptés aux jeunes. Chaque bloc de contenu doit traiter l\'IA — pas uniquement le thème de l\'élève. Réponds UNIQUEMENT en JSON valide.';
+    ? 'Tu es un concepteur pédagogique spécialisé dans l\'éducation numérique pour des professeurs et élèves. Réponds UNIQUEMENT en JSON valide.'
+    : 'Tu es un professeur expert en intelligence artificielle. Tu génères des chapitres de cours sur l\'IA adaptés aux jeunes. Chaque bloc de contenu doit traiter l\'IA — pas uniquement le thème de l\'élève. Réponds UNIQUEMENT en JSON valide. Tous les textes dans le JSON doivent être en texte brut sans syntaxe markdown.';
 
   const userPrompt = isAtelier
     ? buildAtelierPrompt(safeTheme, levelLabel)

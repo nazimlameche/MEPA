@@ -3,11 +3,11 @@ import type { CourseListItem } from '@/lib/types/course';
 
 export const XP_PER_LEVEL = 500;
 
-// Total courses across all modules (theory + prompting). Used for EMPTY_PROGRESS.
+// Total courses across all modules (custom-course chapters + prompting). Used for EMPTY_PROGRESS.
 // These are the catalogue counts — no DB dependency.
-export const TOTAL_THEORY_COURSES    = 6;
-export const TOTAL_PROMPTING_COURSES = 5;
-export const TOTAL_CATALOGUE_COURSES = TOTAL_THEORY_COURSES + TOTAL_PROMPTING_COURSES;
+export const TOTAL_CUSTOM_COURSE_CHAPTERS = 6;
+export const TOTAL_PROMPTING_COURSES      = 5;
+export const TOTAL_CATALOGUE_COURSES      = TOTAL_CUSTOM_COURSE_CHAPTERS + TOTAL_PROMPTING_COURSES;
 
 export const EMPTY_PROGRESS: UserProgress = {
   xp:               0,
@@ -52,25 +52,23 @@ export function apiStatsToProgress(api: ApiStats): UserProgress {
 
 /**
  * Derives module-level progress percentage from completed course IDs.
- * Theory:    completed theory IDs / total theory courses * 100
- * Prompting: completed prompting-* IDs / total prompting courses * 100
- * Others:    0 (no progress tracking defined yet)
+ * custom-course: completed custom-* IDs / total chapters * 100
+ * Prompting:     completed prompting-* IDs / total prompting courses * 100
+ * Others:        0 (no progress tracking defined yet)
  */
 export function computeModuleProgress(
   completedCourseIds: string[],
   modules: Pick<ModuleSummary, 'id'>[],
-  catalog: CourseListItem[],
+  _catalog: CourseListItem[], // unused after theory removal — kept for call-site compat
 ): Record<string, number> {
-  const completedSet = new Set(completedCourseIds);
-
-  const theoryCompleted    = catalog.filter(c => completedSet.has(c.id)).length;
-  const promptingCompleted = completedCourseIds.filter(id => id.startsWith('prompting-')).length;
+  const customCourseCompleted = completedCourseIds.filter(id => id.startsWith('custom-')).length;
+  const promptingCompleted    = completedCourseIds.filter(id => id.startsWith('prompting-')).length;
 
   const result: Record<string, number> = {};
   for (const mod of modules) {
-    if (mod.id === 'theory') {
-      result[mod.id] = TOTAL_THEORY_COURSES > 0
-        ? Math.round((theoryCompleted / TOTAL_THEORY_COURSES) * 100)
+    if (mod.id === 'custom-course') {
+      result[mod.id] = TOTAL_CUSTOM_COURSE_CHAPTERS > 0
+        ? Math.round((customCourseCompleted / TOTAL_CUSTOM_COURSE_CHAPTERS) * 100)
         : 0;
     } else if (mod.id === 'prompting') {
       result[mod.id] = TOTAL_PROMPTING_COURSES > 0
@@ -106,7 +104,7 @@ export function toRecentActivity(
     if (item.type === 'course_completed') {
       if (item.courseId.startsWith('prompting-'))   href = '/modules/prompting';
       else if (item.courseId.startsWith('custom-')) href = '/modules/custom-course';
-      else                                          href = `/modules/theory/${item.courseId}`;
+      else                                          href = `/modules/custom-course`;
     } else if (item.type === 'prompt_scored') {
       href = '/modules/prompting';
     } else if (item.type === 'course_generated') {

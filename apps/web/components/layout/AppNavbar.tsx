@@ -3,15 +3,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, LayoutDashboard, BookOpen, PenLine, Sparkles, FlaskConical, User, LogOut } from 'lucide-react';
+import { Menu, X, LayoutDashboard, PenLine, Sparkles, FlaskConical, User, LogOut } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const NAV_ITEMS = [
   { href: '/dashboard',             icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/modules/theory',        icon: BookOpen,        label: 'Parcours' },
+  { href: '/modules/custom-course', icon: Sparkles,        label: 'Cours sur mesure' },
   { href: '/modules/prompting',     icon: PenLine,         label: 'Prompting' },
-  { href: '/modules/custom-course', icon: Sparkles,        label: 'Sur-Mesure' },
   { href: '/modules/sandbox',       icon: FlaskConical,    label: 'Bac à Sable' },
 ] as const;
 

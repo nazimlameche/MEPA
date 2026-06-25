@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 export async function revalidateProgress(): Promise<void> {
   revalidatePath('/dashboard');
   revalidatePath('/(app)', 'layout'); // topbar XP/streak
-  revalidatePath('/modules/theory');  // LearningPath — statut completed des leçons
+  revalidatePath('/modules/custom-course'); // Cours sur mesure — statut completed des chapitres
 }
 
 /** Invalide le cache du module Cours Sur-Mesure (après delete / change de thème) */

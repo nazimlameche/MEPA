@@ -13,15 +13,6 @@ export const mockUserProgress: UserProgress = {
 // Module metadata (title, icon, route, available). progress = 0 car recalculé à l'exécution.
 export const mockModules: ModuleSummary[] = [
   {
-    id:          'theory',
-    title:       'Parcours Théorique',
-    description: 'Leçons structurées, quiz et histoires illustrées.',
-    icon:        '📚',
-    progress:    0,
-    available:   true,
-    route:       '/modules/theory',
-  },
-  {
     id:          'prompting',
     title:       'Atelier Prompting',
     description: 'Rédige des prompts efficaces et sécurisés.',

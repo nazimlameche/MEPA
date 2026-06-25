@@ -154,14 +154,14 @@ export default function CourseReader({ course }: CourseReaderProps) {
             transition={{ duration: 0.3, ease: 'easeOut', delay: 0.4 }}
           >
             <Link
-              href="/modules/theory"
+              href="/modules/custom-course"
               className="px-8 py-3 font-semibold text-sm text-white inline-block"
               style={{ background: 'var(--color-accent)', borderRadius: '8px' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-accent-hover)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'var(--color-accent)')}
               onClick={() => sounds.click()}
             >
-              Retour au parcours
+              Retour au cours
             </Link>
           </motion.div>
         </motion.div>
@@ -174,14 +174,14 @@ export default function CourseReader({ course }: CourseReaderProps) {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link
-          href="/modules/theory"
+          href="/modules/custom-course"
           className="flex items-center gap-1.5 text-sm transition-colors duration-200"
           style={{ color: 'var(--color-muted)' }}
           onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-body)')}
           onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-muted)')}
         >
           <ArrowLeft size={15} aria-hidden="true" />
-          Parcours
+          Cours sur mesure
         </Link>
         <div className="flex-1" />
         <span className="text-sm" style={{ color: 'var(--color-muted)' }}>

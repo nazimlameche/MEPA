@@ -19,7 +19,6 @@ export default function Navbar() {
         <nav className="border-t border-surface-200 px-4 py-2 space-y-1 bg-white">
           {[
             { label: 'Tableau de bord', href: '/dashboard' },
-            { label: 'Théorie', href: '/modules/theory' },
             { label: 'Prompting', href: '/modules/prompting' },
             { label: 'Bac à Sable', href: '/sandbox' },
             { label: 'Cours Sur-Mesure', href: '/modules/custom-course' },

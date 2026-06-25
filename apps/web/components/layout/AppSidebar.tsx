@@ -2,15 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, BookOpen, PenLine, Sparkles, FlaskConical, User, LogOut } from 'lucide-react';
+import { LayoutDashboard, PenLine, Sparkles, FlaskConical, User, LogOut } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import AlKo from '@/components/mascot/AlKo';
 
 const NAV_ITEMS = [
   { href: '/dashboard',             icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/modules/theory',        icon: BookOpen,        label: 'Parcours' },
+  { href: '/modules/custom-course', icon: Sparkles,        label: 'Cours sur mesure' },
   { href: '/modules/prompting',     icon: PenLine,         label: 'Prompting' },
-  { href: '/modules/custom-course', icon: Sparkles,        label: 'Sur-Mesure' },
   { href: '/modules/sandbox',       icon: FlaskConical,    label: 'Bac à Sable' },
 ] as const;
 

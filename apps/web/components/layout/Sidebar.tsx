@@ -8,7 +8,7 @@ import { cn } from '@ai-edu/ui';
 
 const NAV = [
   { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Parcours Théorique', href: '/modules/theory', icon: BookOpen },
+  { label: 'Cours sur mesure', href: '/modules/custom-course', icon: BookOpen },
   { label: 'Atelier Prompting', href: '/modules/prompting', icon: Wand2 },
   { label: 'Bac à Sable', href: '/sandbox', icon: MessageSquare },
   { label: 'Cours Sur-Mesure', href: '/modules/custom-course', icon: Sparkles },

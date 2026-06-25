@@ -9,6 +9,13 @@ function renderText(content: string): React.ReactNode[] {
       dangerouslySetInnerHTML={{
         __html: paragraph
           .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--color-ink)">$1</strong>')
+          // Fallback markdown renderers — garde-fous si Mistral dépasse les consignes de texte brut
+          .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold mt-4 mb-1" style="color:var(--color-ink)">$1</h3>')
+          .replace(/^## (.+)$/gm,  '<h2 class="text-lg font-semibold mt-5 mb-2" style="color:var(--color-ink)">$1</h2>')
+          .replace(/^# (.+)$/gm,   '<h1 class="text-xl font-bold mt-6 mb-2" style="color:var(--color-ink)">$1</h1>')
+          .replace(/\*(.*?)\*/g,   '<em>$1</em>')
+          .replace(/^[-*] (.+)$/gm, '<li class="ml-4 list-disc">$1</li>')
+          .replace(/^> (.+)$/gm,   '<blockquote class="border-l-4 pl-3 italic" style="border-color:var(--color-border);color:var(--color-muted)">$1</blockquote>')
           .replace(/\n/g, '<br />'),
       }}
     />

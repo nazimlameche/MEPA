@@ -19,9 +19,9 @@ describe('ModuleRegistryService', () => {
   });
 
   it('returns a module by id', () => {
-    const mod = service.getById('theory');
+    const mod = service.getById('custom-course');
     expect(mod).toBeDefined();
-    expect(mod?.id).toBe('theory');
+    expect(mod?.id).toBe('custom-course');
   });
 
   it('returns undefined for unknown id', () => {
@@ -32,7 +32,7 @@ describe('ModuleRegistryService', () => {
     service.register({
       id: 'test-module',
       label: 'Test',
-      category: 'theory',
+      category: 'custom-course',
       icon: 'BookOpen',
       route: '/test',
       requiredRoles: ['admin'],

@@ -9,27 +9,21 @@ export interface PromptExercise {
   bestScore: number | null;
 }
 
-export interface ScoreStep {
+export interface ScoreCriterion {
   score: number;
-  passed: boolean;
   feedback: string;
-  suggestions: string[];
 }
 
-export interface PiiCheckStep {
-  score: number;
-  passed: boolean;
+export interface SecurityCriterion extends ScoreCriterion {
   pii_found: string[];
-  feedback: string;
 }
 
 export interface PromptScoreOutput {
-  total_score: number;
-  passed: boolean;
-  steps: {
-    structure:     ScoreStep;
-    pii_check:     PiiCheckStep;
-    output_format: ScoreStep;
-  };
-  global_feedback: string;
+  'clarté_objectif':  ScoreCriterion;
+  contexte:           ScoreCriterion;
+  format_sortie:      ScoreCriterion;
+  'sécurité_données': SecurityCriterion;
+  total_score:        number;
+  global_feedback:    string;
+  passed:             boolean;
 }
