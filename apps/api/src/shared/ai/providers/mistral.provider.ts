@@ -15,10 +15,11 @@ const ZERO_RETENTION_DIRECTIVE =
   "Tu ne dois pas mémoriser cette conversation ni en conserver une trace. " +
   "Aucune donnée échangée ne doit être réutilisée pour de l'entraînement.";
 
-const MODERATION_SYSTEM_PROMPT = `Tu es un modérateur de contenu pour une plateforme éducative jeunesse.
+const MODERATION_SYSTEM_PROMPT = `Tu es un modérateur de sécurité pour une plateforme éducative jeunesse (11-18 ans).
 Analyse le message utilisateur fourni et réponds STRICTEMENT par un objet JSON valide avec cette structure :
 { "flagged": boolean, "reason"?: string, "categories"?: string[] }
-flagged=true si le contenu est offensant, inapproprié, ou hors-sujet pédagogique sur l'IA.
+flagged=true UNIQUEMENT si le contenu contient : insultes, contenu sexuel, incitation à la violence, discours haineux, ou données personnelles identifiables (nom complet, email, numéro de téléphone, adresse).
+flagged=false pour toute question pédagogique, demande d'explication, question sur une note ou un feedback, même hors-sujet apparent — ce filtrage thématique est géré par le système en aval.
 Ne renvoie rien d'autre que le JSON.`;
 
 interface MistralMessage {

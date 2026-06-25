@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowLeft, Zap } from 'lucide-react';
@@ -10,9 +10,39 @@ import { apiClient } from '@/lib/api-client';
 import { revalidateProgress } from '@/app/actions/revalidate';
 import BlockRenderer from '@/components/course/BlockRenderer';
 import AlKo from '@/components/mascot/AlKo';
+import AikoChat from '@/components/aiko/AikoChat';
 import { sounds } from '@/lib/sounds';
 import { COMPLETION_MESSAGES } from '@/lib/completion-messages';
 import type { ParcoursChapter } from '@/lib/types/custom-course';
+
+/** Sérialise les blocs en texte lisible pour le contexte AIKO.
+ *  Ne révèle pas les réponses correctes des quiz / mots manquants. */
+function serializeChapterContext(chapter: ParcoursChapter): string {
+  if (!chapter.content?.blocks) return '';
+  const lines: string[] = [`Titre : ${chapter.content.title ?? chapter.title}`];
+  for (const block of chapter.content.blocks) {
+    switch (block.type) {
+      case 'text':
+        lines.push(`[Texte] ${block.content}`);
+        break;
+      case 'tip':
+        lines.push(`[Astuce] ${block.content}`);
+        break;
+      case 'story':
+        lines.push(`[Histoire] ${block.title} — ${block.narrative}`);
+        break;
+      case 'quiz':
+        lines.push(`[Quiz] ${block.question}\nOptions : ${block.options.join(' / ')}`);
+        // correct_index volontairement omis
+        break;
+      case 'fill_blank':
+        lines.push(`[Texte à trous] ${block.sentence.replace('___', '___')}`);
+        // blank_word volontairement omis
+        break;
+    }
+  }
+  return lines.join('\n');
+}
 
 interface ChapterReaderProps {
   chapter:    ParcoursChapter;
@@ -24,6 +54,7 @@ const INTERACTIVE_TYPES = new Set(['quiz', 'fill_blank']);
 export default function ChapterReader({ chapter, parcoursId }: ChapterReaderProps) {
   const { data: session }                = useSession();
   const blocks                            = chapter.content!.blocks;
+  const aikoContext                       = useMemo(() => serializeChapterContext(chapter), [chapter]);
   const [currentBlock, setCurrentBlock]  = useState(0);
   const [unlockedUpTo, setUnlockedUpTo]  = useState(0);
   const [completed, setCompleted]        = useState(chapter.status === 'completed');
@@ -72,7 +103,7 @@ export default function ChapterReader({ chapter, parcoursId }: ChapterReaderProp
   if (completed) {
     return (
       <div className="flex flex-col items-center text-center gap-6 py-16 max-w-sm mx-auto">
-        <AlKo variant="celebrate" size={130} bubble={completionMsg} hideName />
+        <AlKo variant="celebrate" size={130} bubble={completionMsg} hideName bubbleOffsetX={-80} bubbleOffsetY={50} />
         <h1 style={{ fontSize: '1.6rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
           Chapitre terminé !
         </h1>
@@ -115,6 +146,9 @@ export default function ChapterReader({ chapter, parcoursId }: ChapterReaderProp
 
   return (
     <div className="space-y-6">
+
+      {/* AIKO — assistant flottant contextuel */}
+      <AikoChat context={aikoContext} chapterTitle={chapter.content?.title ?? chapter.title} />
 
       {/* Header */}
       <div className="flex items-center gap-4">

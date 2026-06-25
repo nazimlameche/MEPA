@@ -1,12 +1,41 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowLeft, Zap, RotateCcw } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import type { PromptExercise, PromptScoreOutput } from '@/lib/types/prompting';
 import ScoreDisplay from './ScoreDisplay';
+import AikoChat from '@/components/aiko/AikoChat';
+
+/** Construit le contexte AIKO à partir du résultat de scoring.
+ *  Jamais de PII — uniquement le sujet, le prompt et les feedbacks Mistral. */
+function buildAikoContext(subject: string, userPrompt: string, result: PromptScoreOutput): string {
+  const pii = result['sécurité_données'].pii_found;
+  const lines = [
+    `Sujet de l'exercice : ${subject}`,
+    `Prompt soumis par l'utilisateur : ${userPrompt}`,
+    `Score total : ${result.total_score}/100`,
+    '',
+    `=== Feedback global ===`,
+    result.global_feedback,
+    '',
+    `=== Clarté de l'objectif (${result['clarté_objectif'].score}/100) ===`,
+    result['clarté_objectif'].feedback,
+    '',
+    `=== Contexte fourni (${result.contexte.score}/100) ===`,
+    result.contexte.feedback,
+    '',
+    `=== Format de sortie (${result.format_sortie.score}/100) ===`,
+    result.format_sortie.feedback,
+    '',
+    `=== Sécurité & données (${result['sécurité_données'].score}/100) ===`,
+    result['sécurité_données'].feedback,
+    pii.length > 0 ? `Informations personnelles détectées : ${pii.join(', ')}` : '',
+  ];
+  return lines.filter(Boolean).join('\n');
+}
 
 const XP_PERFECT = 25;
 const XP_PARTIAL = 10;
@@ -18,13 +47,20 @@ interface Props {
 type PageState = 'writing' | 'loading' | 'result' | 'perfect';
 
 export default function PromptingExercise({ exercise }: Props) {
-  const { data: session }       = useSession();
-  const [state, setState]       = useState<PageState>('writing');
-  const [userPrompt, setPrompt] = useState('');
-  const [result, setResult]     = useState<PromptScoreOutput | null>(null);
-  const [attempts, setAttempts] = useState(0);
+  const { data: session }         = useSession();
+  const [state, setState]         = useState<PageState>('writing');
+  const [userPrompt, setPrompt]   = useState('');
+  const [result, setResult]       = useState<PromptScoreOutput | null>(null);
+  const [attempts, setAttempts]   = useState(0);
   const [bestScore, setBestScore] = useState<number | null>(null);
-  const [error, setError]       = useState('');
+  const [error, setError]         = useState('');
+
+  const showAiko   = (state === 'result' || state === 'perfect') && result !== null;
+  const aikoContext = useMemo(
+    () => (result ? buildAikoContext(exercise.subject, userPrompt, result) : ''),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [result],
+  );
 
   // Restore prior attempts count and best score on mount
   useEffect(() => {
@@ -282,6 +318,16 @@ export default function PromptingExercise({ exercise }: Props) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* AIKO — explication de la note, visible uniquement après scoring */}
+      {showAiko && (
+        <AikoChat
+          context={aikoContext}
+          chapterTitle={`Score ${result!.total_score}/100 — ${exercise.title}`}
+          inputPlaceholder="Demande-moi d'expliquer ta note…"
+          emptyStateMessage="Je connais ton score et les feedbacks détaillés. Demande-moi d'expliquer un critère, ce que tu aurais pu faire mieux, ou comment reformuler ton prompt !"
+        />
+      )}
     </div>
   );
 }

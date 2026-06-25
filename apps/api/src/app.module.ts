@@ -14,6 +14,7 @@ import { DatabaseModule } from './shared/database/database.module';
 import { RedisModule } from './shared/redis/redis.module';
 import { AIModule } from './shared/ai/ai.module';
 import { PromptingModule } from './modules/prompting/prompting.module';
+import { AikoModule } from './modules/aiko/aiko.module';
 import { UserEntity } from './modules/users/entities/user.entity';
 import { Course } from './modules/courses/entities/course.entity';
 import { AuditLog } from './modules/audit/audit-log.entity';
@@ -55,6 +56,7 @@ import { HealthController } from './health.controller';
     PromptingModule,
     SandboxModule,
     CustomCourseModule,
+    AikoModule,
     AuditModule,
   ],
   controllers: [HealthController],
